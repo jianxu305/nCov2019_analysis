@@ -10,10 +10,10 @@
 
 
 ### 文件说明
-* demo.ipynb 演示如何提取、整合数据，以及基本画图操作
-* demo.html 和 demo.pdf 对于没有安装 Python Notebook 的用户，可以用这些文档作为用户手册
-* death_rate.ipynb 对武汉、湖北（除武汉）、全国（除湖北）的地区特异性分析
-* utils.py 基本使用函数
+* demo.ipynb: 演示如何提取、整合数据，以及基本画图操作
+* demo.html 和 demo.pdf: 对于没有安装 Python Notebook 的用户，可以用这些文档作为用户手册
+* death_rate.ipynb: 对武汉、湖北（除武汉）、全国（除湖北）的地区特异性分析
+* utils.py: 基本使用函数
 
 例如
 
@@ -22,4 +22,4 @@ data = utils.load_chinese_data()  # 提取 CSV 实时数据
 daily_frm = utils.aggDaily(data)  # 整合成每日数据
 ```
 
-### 祝一切安好
+** 祝一切安好 **
