@@ -1,4 +1,4 @@
-# 2019-nCov noval coronavirus Data analysis (新型冠状病毒数据分析）
+# 2019-nCov coronavirus Data Analysis in Python (新型冠状病毒数据分析）
 本项目为2019新型冠状病毒（2019-nCoV）疫情状况的 Python 分析工具。
 * 原始数据来源为[丁香园](https://3g.dxy.cn/newh5/view/pneumonia)。 
 * CSV 格式数据文件来源: https://github.com/BlankerL/DXY-2019-nCoV-Data CSV 数据文件由网络爬虫获得，每隔一段时间自动更新一次。
