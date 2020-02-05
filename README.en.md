@@ -19,8 +19,9 @@
 Some Examples:
 
 ```
-data = utils.load_chinese_data()  # 提取 CSV 实时数据
-daily_frm = utils.aggDaily(data)  # 整合成每日数据
+data = utils.load_chinese_data()  # obtain CSV real time data
+daily_frm = utils.aggDaily(data)  # aggregate to daily data
+utils.tsplot_conf_dead_cured(daily_frm, title_prefix='Whole Country')  # Time Series plot of the Confirmed, dead, cured count of the whole country
 ```
 
 ** Best Wishes **
