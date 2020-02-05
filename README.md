@@ -24,4 +24,4 @@ daily_frm = utils.aggDaily(data)  # 整合成每日数据
 utils.tsplot_conf_dead_cured(daily_frm, title_prefix='全国')  # 画全国确诊、死亡、治愈时间序列图
 ```
 
-** 祝一切安好 **
+### 祝一切安好 
