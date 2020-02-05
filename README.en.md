@@ -24,4 +24,4 @@ daily_frm = utils.aggDaily(data)  # aggregate to daily data
 utils.tsplot_conf_dead_cured(daily_frm, title_prefix='Whole Country')  # Time Series plot of the Confirmed, dead, cured count of the whole country
 ```
 
-** Best Wishes **
+### Best Wishes 
