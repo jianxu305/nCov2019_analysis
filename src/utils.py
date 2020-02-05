@@ -42,8 +42,21 @@ def tsplot_conf_dead_cured(df, title_prefix, figsize=(13,6), fontsize=18, logy=F
     plot_df.plot(y=['confirmed'], style='-*', grid=True, ax=ax1, figsize=figsize, logy=logy)
     ax2 = fig.add_subplot(212)
     plot_df.plot(y=['dead', 'cured'], style=':*', grid=True, ax=ax2, figsize=figsize, sharex=True, logy=logy)
-    title = title_prefix + '确诊、死亡、治愈人数统计'
+    title = title_prefix + '累计确诊、死亡、治愈人数'
     if logy:
         title += '（指数）'
     fig.suptitle(title, fontproperties=font_prop, fontsize=fontsize)
     return fig
+
+
+def crossectional_bar(df, date_str, col, title='', groupby='provinceName', figsize=(13, 10), fontsize=15):
+    date = pd.to_datetime(date_str)
+    df_date = df[df['updateDate'] == date]
+    group_frm = df_date.groupby(groupby).agg('sum').sort_values(by=col, ascending=True)
+    ax = group_frm.plot.barh(y=col, grid=True, figsize=figsize)
+    ax.set_yticklabels(group_frm.index, fontproperties=font_prop) 
+    ax.set_title(date_str + '  ' + title, fontproperties=font_prop, fontsize=fontsize)
+    ax.legend(loc='lower right')
+    return ax
+    
+    
