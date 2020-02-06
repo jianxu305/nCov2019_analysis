@@ -10,10 +10,14 @@ def load_chinese_data():
     data = pd.read_csv(DXY_DATA_PATH)
     data['updateTime'] = pd.to_datetime(data['updateTime'])  # original type of updateTime after read_csv is 'str'
     data['updateDate'] = data['updateTime'].dt.date    # add date for daily aggregation
+    # display basic info
+    print('最近更新于: ', data['updateTime'].max())
+    print('数据日期范围: ', data['updateDate'].min(), 'to', data['updateDate'].max())
+    print('数据条目数: ', data.shape[0])
     return data
 
 
-def aggDaily(df):
+def aggDaily(df, clean_data=True):
     '''Aggregate the frequent time series data into a daily frame, ie, one entry per (date, province, city)'''
     frm_list = []
     drop_cols = ['province_' + field for field in ['confirmedCount', 'suspectedCount', 'curedCount', 'deadCount']]  # these can be computed later
@@ -22,7 +26,9 @@ def aggDaily(df):
     out = pd.concat(frm_list).sort_values(['updateDate', 'provinceName', 'cityName'])
     to_names = [field for field in ['confirmed', 'suspected', 'cured', 'dead']]
     out = out.rename(columns=dict([('city_' + d + 'Count', d) for d in to_names])).drop(columns=['suspected'])   # the suspected column from csv is not reliable
-    return clean(out)
+    if clean_data:
+        out = clean(out)
+    return out
 
 
 def clean(df):
@@ -31,8 +37,18 @@ def clean(df):
     Remove these dates for now.  When I have time, I can fill in previous value
     '''
     province_count_frm = df.groupby('updateDate').agg({'provinceName': pd.Series.nunique})
-    invalid_ind = province_count_frm[province_count_frm['provinceName'] < 25].index  # 
-    return df[~df['updateDate'].isin(invalid_ind)]
+    invalid_dates = province_count_frm[province_count_frm['provinceName'] < 25].index  # 
+    if len(invalid_dates) > 0:
+        print("The following dates are removed due to insufficient provinces reported: ", invalid_dates.to_numpy())
+    return df[~df['updateDate'].isin(invalid_dates)]
+    
+
+def add_dailyNew(df):
+    cols = ['confirmed', 'dead', 'cured']
+    daily_new = df.groupby('cityName').agg(dict([(n, 'diff') for n in cols]))
+    daily_new = daily_new.rename(columns=dict([(n, 'dailyNew_' + n) for n in cols]))
+    df = pd.concat([df, daily_new], axis=1, join='outer')
+    return df
     
     
 def tsplot_conf_dead_cured(df, title_prefix, figsize=(13,6), fontsize=18, logy=False):

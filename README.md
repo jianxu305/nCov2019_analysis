@@ -11,7 +11,7 @@
 
 
 ### 文件说明
-* demo.ipynb: 演示如何提取、整合数据，以及基本时序、横向分析作图
+* [demo.ipynb](./src/demo.ipynb): 演示如何提取、整合数据，以及基本时序、横向分析作图
 * demo.html 和 demo.pdf: 对于没有安装 Python Notebook 的用户，可以用这些文档作为用户手册
 * death_rate.ipynb: 对武汉、湖北（除武汉）、全国（除湖北）的地区特异性分析
 * utils.py: 基本使用函数
