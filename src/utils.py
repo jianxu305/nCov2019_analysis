@@ -1,13 +1,32 @@
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as mfm
-font_path = './STFANGSO.TTF'  # for displaying Chinese characters in plots
-font_prop = mfm.FontProperties(fname=font_path)
+import os
 
-DXY_DATA_PATH = 'https://raw.githubusercontent.com/BlankerL/DXY-2019-nCoV-Data/master/csv/DXYArea.csv'
+
+_DXY_DATA_PATH_ = 'https://raw.githubusercontent.com/BlankerL/DXY-2019-nCoV-Data/master/csv/DXYArea.csv'
+_CHN_FONT_ = None
+_FONT_PROP_ = None
+
+def set_font(font_file):
+    if not os.path.exists(font_file):
+        print(font_file + " not found.  If you wish to display Chinese characters in plots, please use set_font() to set the path to the font file.")
+    else:
+        global _CHN_FONT_, _FONT_PROP_
+        _CHN_FONT_ = font_file
+        _FONT_PROP_ = mfm.FontProperties(fname=_CHN_FONT_)
+    return
+        
+
+set_font('C:/Windows/Fonts/STFANGSO.TTF')   # for displaying Chinese characters in plots
+
+
+def use_chn():
+    return _CHN_FONT_ is None
+
 
 def load_chinese_data():
-    data = pd.read_csv(DXY_DATA_PATH)
+    data = pd.read_csv(_DXY_DATA_PATH_)
     data['updateTime'] = pd.to_datetime(data['updateTime'])  # original type of updateTime after read_csv is 'str'
     data['updateDate'] = data['updateTime'].dt.date    # add date for daily aggregation
     # display basic info
@@ -61,7 +80,7 @@ def tsplot_conf_dead_cured(df, title_prefix, figsize=(13,6), fontsize=18, logy=F
     title = title_prefix + '累计确诊、死亡、治愈人数'
     if logy:
         title += '（指数）'
-    fig.suptitle(title, fontproperties=font_prop, fontsize=fontsize)
+    fig.suptitle(title, fontproperties=_FONT_PROP_, fontsize=fontsize)
     return fig
 
 
@@ -70,8 +89,8 @@ def cross_sectional_bar(df, date_str, col, title='', groupby='provinceName', fig
     df_date = df[df['updateDate'] == date]
     group_frm = df_date.groupby(groupby).agg('sum').sort_values(by=col, ascending=True)
     ax = group_frm.plot.barh(y=col, grid=True, figsize=figsize)
-    ax.set_yticklabels(group_frm.index, fontproperties=font_prop) 
-    ax.set_title(date_str + '  ' + title, fontproperties=font_prop, fontsize=fontsize)
+    ax.set_yticklabels(group_frm.index, fontproperties=_FONT_PROP_) 
+    ax.set_title(date_str + '  ' + title, fontproperties=_FONT_PROP_, fontsize=fontsize)
     ax.legend(loc='lower right')
     return ax
     
