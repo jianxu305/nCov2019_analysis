@@ -65,7 +65,7 @@ def tsplot_conf_dead_cured(df, title_prefix, figsize=(13,6), fontsize=18, logy=F
     return fig
 
 
-def crossectional_bar(df, date_str, col, title='', groupby='provinceName', figsize=(13, 10), fontsize=15):
+def cross_sectional_bar(df, date_str, col, title='', groupby='provinceName', figsize=(13, 10), fontsize=15):
     date = pd.to_datetime(date_str)
     df_date = df[df['updateDate'] == date]
     group_frm = df_date.groupby(groupby).agg('sum').sort_values(by=col, ascending=True)
