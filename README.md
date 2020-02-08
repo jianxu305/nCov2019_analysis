@@ -8,6 +8,7 @@
 
 * Pandas
 * 如果想要交互使用的话，要先安装 Python Notebook，否则不需要。
+* 中文字库缺省是 C:/Windows/Fonts/STFANGSO.TTF 。如果你的字库文件在其他地方，必须调用 utils.set_font(<字库文件>)，图形才可以正确显示汉字。 
 
 
 ### 文件说明
