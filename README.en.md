@@ -8,6 +8,7 @@
 
 * Pandas
 * If you need interactive analysis, you need to install Python Notebook first.  Otherwise it's not needed.
+* Default font file is at C:/Windows/Fonts/STFANGSO.TTF .  If your font file is at another location, you need to call utils.set_font(<font file>), in order for the plots display Chinese characters correctly.
 
 
 ### Description
