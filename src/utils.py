@@ -2,7 +2,7 @@ import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.font_manager as mfm
 import os
-
+import numpy as np
 
 _DXY_DATA_PATH_ = 'https://raw.githubusercontent.com/BlankerL/DXY-2019-nCoV-Data/master/csv/DXYArea.csv'
 _CHN_FONT_ = None
@@ -70,24 +70,33 @@ def add_dailyNew(df):
     return df
     
     
-def tsplot_conf_dead_cured(df, title_prefix, figsize=(13,6), fontsize=18, logy=False):
+def tsplot_conf_dead_cured(df, title_prefix, figsize=(13,10), fontsize=18, logy=False):
     fig = plt.figure()
     ax1 = fig.add_subplot(211)
     plot_df = df.groupby('updateDate').agg('sum')
-    plot_df.plot(y=['confirmed'], style='-*', grid=True, ax=ax1, figsize=figsize, logy=logy)
-    ax2 = fig.add_subplot(212)
-    plot_df.plot(y=['dead', 'cured'], style=':*', grid=True, ax=ax2, figsize=figsize, sharex=True, logy=logy)
-    title = title_prefix + '累计确诊、死亡、治愈人数'
+    plot_df.plot(y=['confirmed'], style='-*', ax=ax1, grid=True, figsize=figsize, logy=logy, color='black', marker='o')
     if logy:
-        title += '（指数）'
+        ax1.set_ylabel("log(confirmed)", color="black", fontsize=14)
+    else:
+        ax1.set_ylabel("confirmed", color="black", fontsize=14)
+    if 'dailyNew_confirmed' in df.columns:
+        ax11 = ax1.twinx()
+        ax11.bar(x=plot_df.index, height=plot_df['dailyNew_confirmed'], alpha=0.3, color='blue')
+        ax11.set_ylabel('dailyNew_confirmed', color='blue', fontsize=14)
+    ax2 = fig.add_subplot(212)
+    plot_df.plot(y=['dead', 'cured'], style=':*', grid=True, ax=ax2, figsize=figsize, sharex=False, logy=logy)
+    ax2.set_ylabel("count")
+    title = title_prefix + '累计确诊、死亡、治愈人数'
     fig.suptitle(title, fontproperties=_FONT_PROP_, fontsize=fontsize)
     return fig
 
 
-def cross_sectional_bar(df, date_str, col, title='', groupby='provinceName', figsize=(13, 10), fontsize=15):
+def cross_sectional_bar(df, date_str, col, title='', groupby='provinceName', largestN=0, figsize=(13, 10), fontsize=15):
     date = pd.to_datetime(date_str)
     df_date = df[df['updateDate'] == date]
     group_frm = df_date.groupby(groupby).agg('sum').sort_values(by=col, ascending=True)
+    if largestN > 0:
+        group_frm = group_frm[-largestN:]  # only plot the first N bars
     ax = group_frm.plot.barh(y=col, grid=True, figsize=figsize)
     ax.set_yticklabels(group_frm.index, fontproperties=_FONT_PROP_) 
     ax.set_title(date_str + '  ' + title, fontproperties=_FONT_PROP_, fontsize=fontsize)
