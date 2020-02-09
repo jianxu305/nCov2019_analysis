@@ -41,7 +41,7 @@ def aggDaily(df, clean_data=True):
     frm_list = []
     drop_cols = ['province_' + field for field in ['confirmedCount', 'suspectedCount', 'curedCount', 'deadCount']]  # these can be computed later
     df = rename_abnormal_cities(df)
-    for key, frm in df.drop(columns=drop_cols).sort_values(['updateDate']).groupby(['cityName', 'updateDate']):
+    for key, frm in df.drop(columns=drop_cols).sort_values(['updateDate']).groupby(['provinceName', 'cityName', 'updateDate']):
         frm_list.append(frm.sort_values(['updateTime'])[-1:])    # take the latest row within (city, date)
     out = pd.concat(frm_list).sort_values(['updateDate', 'provinceName', 'cityName'])
     to_names = [field for field in ['confirmed', 'suspected', 'cured', 'dead']]
