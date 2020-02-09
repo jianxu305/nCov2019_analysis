@@ -40,17 +40,18 @@ def aggDaily(df, clean_data=True):
     '''Aggregate the frequent time series data into a daily frame, ie, one entry per (date, province, city)'''
     frm_list = []
     drop_cols = ['province_' + field for field in ['confirmedCount', 'suspectedCount', 'curedCount', 'deadCount']]  # these can be computed later
+    df = rename_abnormal_cities(df)
     for key, frm in df.drop(columns=drop_cols).sort_values(['updateDate']).groupby(['cityName', 'updateDate']):
-        frm_list.append(frm.sort_values(['updateTime'])[-1:])    # take the lastest row within (city, date)
+        frm_list.append(frm.sort_values(['updateTime'])[-1:])    # take the latest row within (city, date)
     out = pd.concat(frm_list).sort_values(['updateDate', 'provinceName', 'cityName'])
     to_names = [field for field in ['confirmed', 'suspected', 'cured', 'dead']]
     out = out.rename(columns=dict([('city_' + d + 'Count', d) for d in to_names])).drop(columns=['suspected'])   # the suspected column from csv is not reliable
     if clean_data:
-        out = clean(out)
+        out = remove_abnormal_dates(out)
     return out
 
 
-def clean(df):
+def remove_abnormal_dates(df):
     '''
     On some dates, very little provinces have reports (usually happens when just pass mid-night)
     Remove these dates for now.  When I have time, I can fill in previous value
@@ -60,6 +61,21 @@ def clean(df):
     if len(invalid_dates) > 0:
         print("The following dates are removed due to insufficient provinces reported: ", invalid_dates.to_numpy())
     return df[~df['updateDate'].isin(invalid_dates)]
+
+
+def rename_abnormal_cities(snapshots):
+    '''
+    Sometimes, for example 2/3/2020, on some time snapshots, the CSV data contains cityName entries such as "南阳", "商丘", but at other time snapshots, it contains "南阳（含邓州）",  and "商丘（含永城）", etc.  They should be treated as the same city
+    This results in the aggregation on province level gets too high.
+    For now, entries will be ignored if cityName == xxx(xxx), and xxx already in the cityName set
+    '''
+    dup_frm = snapshots[snapshots['cityName'].str.contains('（')]
+    if len(dup_frm) == 0:
+        return snapshots
+    clean_frm = snapshots[np.logical_not(snapshots['cityName'].str.contains('（'))]
+    new_names = dup_frm['cityName'].apply(lambda x: x.split('（')[0])
+    dup_frm = dup_frm.assign(cityName=new_names)   # overwritten the old names
+    return pd.concat([dup_frm, clean_frm])
     
 
 def add_dailyNew(df):
