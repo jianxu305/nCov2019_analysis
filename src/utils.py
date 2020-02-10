@@ -7,6 +7,7 @@ import numpy as np
 _DXY_DATA_PATH_ = 'https://raw.githubusercontent.com/BlankerL/DXY-2019-nCoV-Data/master/csv/DXYArea.csv'
 _CHN_FONT_ = None
 _FONT_PROP_ = None
+_CHN_EN_DICT_ = './locationDict.csv'
 
 def set_font(font_file):
     if not os.path.exists(font_file):
@@ -26,6 +27,15 @@ def use_chn():
 
 
 def load_chinese_data():
+    ''' This includes some basic cleaning'''
+    data = load_chinese_raw()
+    return rename_cities(data)
+
+
+def load_chinese_raw():
+    '''
+    This provides a way to lookinto the 'raw' data
+    '''
     data = pd.read_csv(_DXY_DATA_PATH_)
     data['updateTime'] = pd.to_datetime(data['updateTime'])  # original type of updateTime after read_csv is 'str'
     data['updateDate'] = data['updateTime'].dt.date    # add date for daily aggregation
@@ -33,14 +43,13 @@ def load_chinese_data():
     print('最近更新于: ', data['updateTime'].max())
     print('数据日期范围: ', data['updateDate'].min(), 'to', data['updateDate'].max())
     print('数据条目数: ', data.shape[0])
-    return data
+    return data   
 
 
 def aggDaily(df, clean_data=True):
     '''Aggregate the frequent time series data into a daily frame, ie, one entry per (date, province, city)'''
     frm_list = []
     drop_cols = ['province_' + field for field in ['confirmedCount', 'suspectedCount', 'curedCount', 'deadCount']]  # these can be computed later
-    df = rename_abnormal_cities(df)
     for key, frm in df.drop(columns=drop_cols).sort_values(['updateDate']).groupby(['provinceName', 'cityName', 'updateDate']):
         frm_list.append(frm.sort_values(['updateTime'])[-1:])    # take the latest row within (city, date)
     out = pd.concat(frm_list).sort_values(['updateDate', 'provinceName', 'cityName'])
@@ -63,21 +72,81 @@ def remove_abnormal_dates(df):
     return df[~df['updateDate'].isin(invalid_dates)]
 
 
-def rename_abnormal_cities(snapshots):
+def rename_cities(snapshots):
     '''
     Sometimes, for example 2/3/2020, on some time snapshots, the CSV data contains cityName entries such as "南阳", "商丘", but at other time snapshots, it contains "南阳（含邓州）",  and "商丘（含永城）", etc.  They should be treated as the same city
     This results in the aggregation on province level gets too high.
     For now, entries will be ignored if cityName == xxx(xxx), and xxx already in the cityName set
     '''
     dup_frm = snapshots[snapshots['cityName'].str.contains('（')]
-    if len(dup_frm) == 0:
-        return snapshots
-    clean_frm = snapshots[np.logical_not(snapshots['cityName'].str.contains('（'))]
-    new_names = dup_frm['cityName'].apply(lambda x: x.split('（')[0])
-    dup_frm = dup_frm.assign(cityName=new_names)   # overwritten the old names
-    return pd.concat([dup_frm, clean_frm])
+    rename_dict = {}
+    if len(dup_frm) >= 0:
+        rename_dict = dict([(name, name.split('（')[0]) for name in dup_frm['cityName']])
     
+    rename_dict['吐鲁番市'] = '吐鲁番'   # raw data has both 吐鲁番市 and 吐鲁番, should be combined
+    rename_dict['虹口'] = '虹口区'
+    rename_dict['嘉定'] = '嘉定区'
+    rename_dict['浦东'] = '浦东新区'
+    rename_dict['黄浦'] = '黄浦区'
+    rename_dict['浦东区'] = '浦东新区'
+    rename_dict['丰台'] = '丰台区'
+    rename_dict['宝山'] = '宝山区'
+    rename_dict['徐汇'] = '徐汇区'
+    rename_dict['门头沟'] = '门头沟区'
+    rename_dict['闵行'] = '闵行区'
+    rename_dict['东城'] = '东城区'
+    rename_dict['通州'] = '通州区'
+    rename_dict['鹤壁市'] = '鹤壁'
+    rename_dict['漯河市'] = '漯河'
+    rename_dict['陵水县'] = '陵水'
+    rename_dict['平凉市'] = '平凉'
+    rename_dict['城口县'] = '城口'
+    rename_dict['白银市'] = '白银'
+    rename_dict['垫江县'] = '垫江'
+    rename_dict['天水市'] = '天水'
+    rename_dict['丰都县'] = '丰都'
+    rename_dict['琼中县'] = '琼中'
+    rename_dict['乌海市'] = '乌海'
+    rename_dict['吉林市'] = '吉林'
+    rename_dict['临汾市'] = '临汾'
+    
+    rename_dict['第八师石河子市'] = '兵团第八师石河子市'
+    rename_dict['第八师石河子'] = '兵团第八师石河子市'
+    rename_dict['石河子'] = '兵团第八师石河子市'
+    rename_dict['第八师'] = '兵团第八师石河子市'
+    rename_dict['呼伦贝尔牙克石市'] = '呼伦贝尔牙克石'
+    rename_dict['酉阳县'] = '酉阳'
+    rename_dict['通辽市经济开发区'] = '通辽'
+    rename_dict['第九师'] = '兵团第九师'
+    rename_dict['西双版纳州'] = '西双版纳'
+    rename_dict['澄迈县'] = '澄迈'
+    rename_dict['奉节县'] = '奉节'
+    rename_dict['石柱县'] = '石柱'
+    
+    rename_dict['待明确'] = '待明确地区'
+    rename_dict['未明确地区'] = '待明确地区'
+    rename_dict['未知'] = '待明确地区'
+    rename_dict['未知地区'] = '待明确地区'
+    
+    snapshots['cityName'] = snapshots['cityName'].replace(rename_dict)  # write back
+    return snapshots
 
+
+def combine_daily(df):
+    # the following should be "combined", rather than "replaced", but only impacts low count province.  Ignore for now
+    rename_dict['包头市东河区'] = '包头'
+    rename_dict['包头市昆都仑区'] = '包头'   
+    rename_dict['锡林郭勒'] = '锡林郭勒盟'   #combine all these into one "city"
+    rename_dict['锡林郭勒盟二连浩特'] = '锡林郭勒盟'
+    rename_dict['锡林郭勒盟锡林浩特'] = '锡林郭勒盟'
+    rename_dict['阿克苏'] = '阿克苏地区'
+    rename_dict['鄂尔多斯东胜区'] = '鄂尔多斯'
+    rename_dict['赤峰市松山区'] = '赤峰'
+    rename_dict['赤峰市林西县'] = '赤峰'
+    # do something when I have time
+    return
+
+    
 def add_dailyNew(df):
     cols = ['confirmed', 'dead', 'cured']
     daily_new = df.groupby('cityName').agg(dict([(n, 'diff') for n in cols]))
@@ -120,3 +189,10 @@ def cross_sectional_bar(df, date_str, col, title='', groupby='provinceName', lar
     return ax
     
     
+def add_en_location(df):
+    '''Add provinceName_en, and cityName_en'''
+    chn_en = pd.read_csv(_CHN_EN_DICT_, encoding='utf-8')
+    translation = dict([t for t in zip(chn_en['Chinese'], chn_en['English'])])
+    df['provinceName_en'] = df['provinceName'].replace(translation)
+    df['cityName_en'] = df['cityName'].replace(translation)
+    return df
