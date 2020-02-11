@@ -13,6 +13,7 @@
 
 ### Description
 * [demo.ipynb](./src/demo.ipynb): Demostrating how to extract / aggregate / slice data, and basic time series / cross-sectional plotting 
+* [demo.en.ipynb](./src/demo.en.ipynb): An English version of the demo.ipynb
 * demo.html, demo.pdf: For those who doon't have Python Notebook, these two files serve as demo.ipynb for demonstration purpose
 * death_rate.ipynb: An example analysis of the heterogeneity of death rate across different regions
 * utils.py: Utility functions

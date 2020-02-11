@@ -46,7 +46,7 @@ def load_chinese_raw():
     return data   
 
 
-def aggDaily(df, clean_data=True):
+def aggDaily(df, clean_dates=True):
     '''Aggregate the frequent time series data into a daily frame, ie, one entry per (date, province, city)'''
     frm_list = []
     drop_cols = ['province_' + field for field in ['confirmedCount', 'suspectedCount', 'curedCount', 'deadCount']]  # these can be computed later
@@ -55,7 +55,7 @@ def aggDaily(df, clean_data=True):
     out = pd.concat(frm_list).sort_values(['updateDate', 'provinceName', 'cityName'])
     to_names = [field for field in ['confirmed', 'suspected', 'cured', 'dead']]
     out = out.rename(columns=dict([('city_' + d + 'Count', d) for d in to_names])).drop(columns=['suspected'])   # the suspected column from csv is not reliable
-    if clean_data:
+    if clean_dates:
         out = remove_abnormal_dates(out)
     return out
 
@@ -155,15 +155,12 @@ def add_dailyNew(df):
     return df
     
     
-def tsplot_conf_dead_cured(df, title_prefix, figsize=(13,10), fontsize=18, logy=False):
+def tsplot_conf_dead_cured(df, title_prefix='', figsize=(13,10), fontsize=18, logy=False, en=False):
     fig = plt.figure()
     ax1 = fig.add_subplot(211)
     plot_df = df.groupby('updateDate').agg('sum')
     plot_df.plot(y=['confirmed'], style='-*', ax=ax1, grid=True, figsize=figsize, logy=logy, color='black', marker='o')
-    if logy:
-        ax1.set_ylabel("log(confirmed)", color="black", fontsize=14)
-    else:
-        ax1.set_ylabel("confirmed", color="black", fontsize=14)
+    ax1.set_ylabel("confirmed", color="black", fontsize=14)
     if 'dailyNew_confirmed' in df.columns:
         ax11 = ax1.twinx()
         ax11.bar(x=plot_df.index, height=plot_df['dailyNew_confirmed'], alpha=0.3, color='blue')
@@ -171,12 +168,19 @@ def tsplot_conf_dead_cured(df, title_prefix, figsize=(13,10), fontsize=18, logy=
     ax2 = fig.add_subplot(212)
     plot_df.plot(y=['dead', 'cured'], style=':*', grid=True, ax=ax2, figsize=figsize, sharex=False, logy=logy)
     ax2.set_ylabel("count")
-    title = title_prefix + '累计确诊、死亡、治愈人数'
+    if en:
+        title = title_prefix + ' Count of confirmed, dead, and cured'
+    else:
+        title = title_prefix + '累计确诊、死亡、治愈人数'
     fig.suptitle(title, fontproperties=_FONT_PROP_, fontsize=fontsize)
     return fig
 
 
-def cross_sectional_bar(df, date_str, col, title='', groupby='provinceName', largestN=0, figsize=(13, 10), fontsize=15):
+def tsplot_conf_dead_cured_en(df, title_prefix='', figsize=(13,10), fontsize=18, logy=False):
+    return tsplot_conf_dead_cured(df, title_prefix=title_prefix, figsize=figsize, fontsize=fontsize, logy=logy, en=True)
+
+    
+def cross_sectional_bar(df, date_str, col, title='', groupby='provinceName', largestN=0, figsize=(13, 10), fontsize=15, en=False):
     date = pd.to_datetime(date_str)
     df_date = df[df['updateDate'] == date]
     group_frm = df_date.groupby(groupby).agg('sum').sort_values(by=col, ascending=True)
@@ -187,6 +191,10 @@ def cross_sectional_bar(df, date_str, col, title='', groupby='provinceName', lar
     ax.set_title(date_str + '  ' + title, fontproperties=_FONT_PROP_, fontsize=fontsize)
     ax.legend(loc='lower right')
     return ax
+    
+    
+def cross_sectional_bar_en(df, date_str, col, title='', groupby='provinceName', largestN=0, figsize=(13, 10), fontsize=15):
+    return cross_sectional_bar(df, date_str, col, title=title, groupby=groupby, largestN=largestN, figsize=figsize, fontsize=fontsize, en=True)
     
     
 def add_en_location(df):
