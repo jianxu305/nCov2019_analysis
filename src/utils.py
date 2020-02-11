@@ -40,9 +40,9 @@ def load_chinese_raw():
     data['updateTime'] = pd.to_datetime(data['updateTime'])  # original type of updateTime after read_csv is 'str'
     data['updateDate'] = data['updateTime'].dt.date    # add date for daily aggregation
     # display basic info
-    print('最近更新于: ', data['updateTime'].max())
-    print('数据日期范围: ', data['updateDate'].min(), 'to', data['updateDate'].max())
-    print('数据条目数: ', data.shape[0])
+    print('Last update: ', data['updateTime'].max())
+    print('Data date range: ', data['updateDate'].min(), 'to', data['updateDate'].max())
+    print('Number of rows in raw data: ', data.shape[0])
     return data   
 
 
