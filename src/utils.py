@@ -36,27 +36,52 @@ def load_chinese_raw():
     '''
     This provides a way to lookinto the 'raw' data
     '''
-    data = pd.read_csv(_DXY_DATA_PATH_)
-    data['updateTime'] = pd.to_datetime(data['updateTime'])  # original type of updateTime after read_csv is 'str'
-    data['updateDate'] = data['updateTime'].dt.date    # add date for daily aggregation
+    raw = pd.read_csv(_DXY_DATA_PATH_)
+    
+    # the original CSV column names are in camel case, change to lower_case convention
+    rename_dict = {'updateTime': 'update_time',
+                   'provinceName': 'province_name',
+                   'cityName': 'city_name',
+                   'province_confirmedCount': 'province_confirmed',
+                   'province_suspectedCount': 'province_suspected',
+                   'province_deadCount': 'province_dead',
+                   'province_curedCount': 'province_cured',
+                   'city_confirmedCount': 'city_confirmed',
+                   'city_suspectedCount': 'city_suspected',
+                   'city_deadCount': 'city_dead',
+                   'city_curedCount': 'city_cured'
+                  }
+    data = raw.rename(columns=rename_dict)
+    data['update_time'] = pd.to_datetime(data['update_time'])  # original type of update_time after read_csv is 'str'
+    data['update_date'] = data['update_time'].dt.date    # add date for daily aggregation, if without to_datetime, it would be a dateInt object, difficult to use
     # display basic info
-    print('Last update: ', data['updateTime'].max())
-    print('Data date range: ', data['updateDate'].min(), 'to', data['updateDate'].max())
+    print('Last update: ', data['update_time'].max())
+    print('Data date range: ', data['update_date'].min(), 'to', data['update_date'].max())
     print('Number of rows in raw data: ', data.shape[0])
     return data   
 
 
-def aggDaily(df, clean_dates=True):
+def aggDaily(df):
     '''Aggregate the frequent time series data into a daily frame, ie, one entry per (date, province, city)'''
     frm_list = []
-    drop_cols = ['province_' + field for field in ['confirmedCount', 'suspectedCount', 'curedCount', 'deadCount']]  # these can be computed later
-    for key, frm in df.drop(columns=drop_cols).sort_values(['updateDate']).groupby(['provinceName', 'cityName', 'updateDate']):
-        frm_list.append(frm.sort_values(['updateTime'])[-1:])    # take the latest row within (city, date)
-    out = pd.concat(frm_list).sort_values(['updateDate', 'provinceName', 'cityName'])
+    drop_cols = ['province_' + field for field in ['confirmed', 'suspected', 'cured', 'dead']]  # these can be computed later
+    for key, frm in df.drop(columns=drop_cols).sort_values(['update_date']).groupby(['province_name', 'city_name', 'update_date']):
+        frm_list.append(frm.sort_values(['update_time'])[-1:])    # take the latest row within (city, date)
+    out = pd.concat(frm_list).sort_values(['update_date', 'province_name', 'city_name'])
     to_names = [field for field in ['confirmed', 'suspected', 'cured', 'dead']]
-    out = out.rename(columns=dict([('city_' + d + 'Count', d) for d in to_names])).drop(columns=['suspected'])   # the suspected column from csv is not reliable
-    if clean_dates:
-        out = remove_abnormal_dates(out)
+    out = out.rename(columns=dict([('city_' + d, 'cum_' + d) for d in to_names]))
+    out = out.drop(columns=['cum_suspected'])   # the suspected column from csv is not reliable, may keep this when the upstream problem is solved
+
+    #out = remove_abnormal_dates(out)
+    out = add_daily_new(out)  # add daily new cases
+    out = add_en_location(out)
+    #out = out.set_index(['update_date'])
+    
+    # rearrange columns
+    new_col_order = ['update_date', 'province_name', 'province_name_en', 'city_name', 'city_name_en', 'cum_confirmed', 'cum_cured', 'cum_dead', 'new_confirmed', 'new_cured', 'new_dead', 'update_time']
+    if len(new_col_order) != len(out.columns):
+        raise ValueError("Some columns are dropped: ", set(out.columns).difference(new_col_order))
+    out = out[new_col_order]
     return out
 
 
@@ -65,23 +90,28 @@ def remove_abnormal_dates(df):
     On some dates, very little provinces have reports (usually happens when just pass mid-night)
     Remove these dates for now.  When I have time, I can fill in previous value
     '''
-    province_count_frm = df.groupby('updateDate').agg({'provinceName': pd.Series.nunique})
-    invalid_dates = province_count_frm[province_count_frm['provinceName'] < 25].index  # 
-    if len(invalid_dates) > 0:
-        print("The following dates are removed due to insufficient provinces reported: ", invalid_dates.to_numpy())
-    return df[~df['updateDate'].isin(invalid_dates)]
+    if len(df['update_date']) < 2:
+        return
+    second_last_date, last_date = df['update_date'].iloc[-2:]
+    city_count = df.groupby('update_date').agg({'city_name': pd.Series.nunique})
+    second_last_count, last_count = city_count['city_name'].iloc[-2:]
+    if last_count < second_last_count * .95:   # 95% to give some margin
+        print("The last date " + str(last_date) + " is removed due to insufficient cities reporting")
+        return df[~df['update_date'] == last_date]
+    else:
+        return df
 
 
 def rename_cities(snapshots):
     '''
-    Sometimes, for example 2/3/2020, on some time snapshots, the CSV data contains cityName entries such as "南阳", "商丘", but at other time snapshots, it contains "南阳（含邓州）",  and "商丘（含永城）", etc.  They should be treated as the same city
+    Sometimes, for example 2/3/2020, on some time snapshots, the CSV data contains city_name entries such as "南阳", "商丘", but at other time snapshots, it contains "南阳（含邓州）",  and "商丘（含永城）", etc.  They should be treated as the same city
     This results in the aggregation on province level gets too high.
-    For now, entries will be ignored if cityName == xxx(xxx), and xxx already in the cityName set
+    For now, entries will be ignored if city_name == xxx(xxx), and xxx already in the city_name set
     '''
-    dup_frm = snapshots[snapshots['cityName'].str.contains('（')]
+    dup_frm = snapshots[snapshots['city_name'].str.contains('（')]
     rename_dict = {}
     if len(dup_frm) >= 0:
-        rename_dict = dict([(name, name.split('（')[0]) for name in dup_frm['cityName']])
+        rename_dict = dict([(name, name.split('（')[0]) for name in dup_frm['city_name']])
     
     rename_dict['吐鲁番市'] = '吐鲁番'   # raw data has both 吐鲁番市 and 吐鲁番, should be combined
     rename_dict['虹口'] = '虹口区'
@@ -128,7 +158,7 @@ def rename_cities(snapshots):
     rename_dict['未知'] = '待明确地区'
     rename_dict['未知地区'] = '待明确地区'
     
-    snapshots['cityName'] = snapshots['cityName'].replace(rename_dict)  # write back
+    snapshots['city_name'] = snapshots['city_name'].replace(rename_dict)  # write back
     return snapshots
 
 
@@ -147,60 +177,49 @@ def combine_daily(df):
     return
 
     
-def add_dailyNew(df):
+def add_daily_new(df):
     cols = ['confirmed', 'dead', 'cured']
-    daily_new = df.groupby('cityName').agg(dict([(n, 'diff') for n in cols]))
-    daily_new = daily_new.rename(columns=dict([(n, 'dailyNew_' + n) for n in cols]))
+    daily_new = df.groupby(['province_name', 'city_name']).agg(dict([(n, 'diff') for n in ['cum_' + c for c in cols]]))
+    daily_new = daily_new.rename(columns=dict([('cum_' + n, 'new_' + n) for n in cols]))
     df = pd.concat([df, daily_new], axis=1, join='outer')
     return df
     
     
-def tsplot_conf_dead_cured(df, title_prefix='', figsize=(13,10), fontsize=18, logy=False, en=False):
+def tsplot_conf_dead_cured(df, figsize=(13,10), fontsize=18, logy=False):
+    import matplotlib.ticker as ticker
     fig = plt.figure()
     ax1 = fig.add_subplot(211)
-    plot_df = df.groupby('updateDate').agg('sum')
-    plot_df.plot(y=['confirmed'], style='-*', ax=ax1, grid=True, figsize=figsize, logy=logy, color='black', marker='o')
+    plot_df = df.groupby('update_date').agg('sum')
+    plot_df.plot(y=['cum_confirmed'], style='-*', ax=ax1, grid=True, figsize=figsize, logy=logy, color='black', marker='o')
     ax1.set_ylabel("confirmed", color="black", fontsize=14)
-    if 'dailyNew_confirmed' in df.columns:
-        ax11 = ax1.twinx()
-        ax11.bar(x=plot_df.index, height=plot_df['dailyNew_confirmed'], alpha=0.3, color='blue')
-        ax11.set_ylabel('dailyNew_confirmed', color='blue', fontsize=14)
+
+    ax11 = ax1.twinx()
+    ax11.bar(x=plot_df.index, height=plot_df['new_confirmed'], color='blue', alpha=0.3)
+    ax11.set_ylabel('new_confirmed', color='blue', fontsize=14)
+    
     ax2 = fig.add_subplot(212)
-    plot_df.plot(y=['dead', 'cured'], style=':*', grid=True, ax=ax2, figsize=figsize, sharex=False, logy=logy)
+    plot_df.plot(y=['cum_dead', 'cum_cured'], style='-o', grid=True, ax=ax2, figsize=figsize, sharex=False, logy=logy)
     ax2.set_ylabel("count")
-    if en:
-        title = title_prefix + ' Count of confirmed, dead, and cured'
-    else:
-        title = title_prefix + '累计确诊、死亡、治愈人数'
-    fig.suptitle(title, fontproperties=_FONT_PROP_, fontsize=fontsize)
+    
     return fig
 
-
-def tsplot_conf_dead_cured_en(df, title_prefix='', figsize=(13,10), fontsize=18, logy=False):
-    return tsplot_conf_dead_cured(df, title_prefix=title_prefix, figsize=figsize, fontsize=fontsize, logy=logy, en=True)
-
     
-def cross_sectional_bar(df, date_str, col, title='', groupby='provinceName', largestN=0, figsize=(13, 10), fontsize=15, en=False):
+def cross_sectional_bar(df, date_str, col, groupby='province_name', largestN=0, figsize=(13, 10), fontsize=15):
     date = pd.to_datetime(date_str)
-    df_date = df[df['updateDate'] == date]
+    df_date = df[df['update_date'] == date]
     group_frm = df_date.groupby(groupby).agg('sum').sort_values(by=col, ascending=True)
     if largestN > 0:
         group_frm = group_frm[-largestN:]  # only plot the first N bars
     ax = group_frm.plot.barh(y=col, grid=True, figsize=figsize)
     ax.set_yticklabels(group_frm.index, fontproperties=_FONT_PROP_) 
-    ax.set_title(date_str + '  ' + title, fontproperties=_FONT_PROP_, fontsize=fontsize)
     ax.legend(loc='lower right')
     return ax
     
     
-def cross_sectional_bar_en(df, date_str, col, title='', groupby='provinceName', largestN=0, figsize=(13, 10), fontsize=15):
-    return cross_sectional_bar(df, date_str, col, title=title, groupby=groupby, largestN=largestN, figsize=figsize, fontsize=fontsize, en=True)
-    
-    
 def add_en_location(df):
-    '''Add provinceName_en, and cityName_en'''
+    '''Add province_name_en, and city_name_en'''
     chn_en = pd.read_csv(_CHN_EN_DICT_, encoding='utf-8')
     translation = dict([t for t in zip(chn_en['Chinese'], chn_en['English'])])
-    df['provinceName_en'] = df['provinceName'].replace(translation)
-    df['cityName_en'] = df['cityName'].replace(translation)
+    df['province_name_en'] = df['province_name'].replace(translation)
+    df['city_name_en'] = df['city_name'].replace(translation)
     return df

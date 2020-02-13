@@ -1,0 +1,2 @@
+外地来津人员， 外地来粤人员, 外地来沪人员
+All maps to "Non_residence" in cityName, so that you can easily group all non-residence of different provinces
