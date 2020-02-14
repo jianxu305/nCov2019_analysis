@@ -19,7 +19,7 @@ def set_font(font_file):
     return
         
 
-set_font('C:/Windows/Fonts/STFANGSO.TTF')   # for displaying Chinese characters in plots
+set_font('./STFANGSO.TTF')   # for displaying Chinese characters in plots
 
 
 def use_chn():
@@ -210,7 +210,7 @@ def cross_sectional_bar(df, date_str, col, groupby='province_name', largestN=0, 
     group_frm = df_date.groupby(groupby).agg('sum').sort_values(by=col, ascending=True)
     if largestN > 0:
         group_frm = group_frm[-largestN:]  # only plot the first N bars
-    ax = group_frm.plot.barh(y=col, grid=True, figsize=figsize)
+    ax = group_frm.plot.barh(y=col, grid=True, figsize=figsize, fontsize=fontsize)
     ax.set_yticklabels(group_frm.index, fontproperties=_FONT_PROP_) 
     ax.legend(loc='lower right')
     return ax
