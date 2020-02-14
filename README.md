@@ -1,5 +1,5 @@
 # 2019-nCov 新型冠状病毒 Python 数据分析
-简体中文 | [English](README.en.md)
+## 简体中文 | [English](README.en.md)
 
 * 原始数据来源为[丁香园](https://3g.dxy.cn/newh5/view/pneumonia)。 
 * CSV 格式数据文件来源: https://github.com/BlankerL/DXY-2019-nCoV-Data CSV 数据文件由网络爬虫获得，每隔一段时间自动更新一次。
