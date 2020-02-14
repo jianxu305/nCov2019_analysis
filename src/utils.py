@@ -185,8 +185,7 @@ def add_daily_new(df):
     return df
     
     
-def tsplot_conf_dead_cured(df, figsize=(13,10), fontsize=18, logy=False):
-    import matplotlib.ticker as ticker
+def tsplot_conf_dead_cured(df, figsize=(13,10), fontsize=18, logy=False, title=None):
     fig = plt.figure()
     ax1 = fig.add_subplot(211)
     plot_df = df.groupby('update_date').agg('sum')
@@ -201,19 +200,25 @@ def tsplot_conf_dead_cured(df, figsize=(13,10), fontsize=18, logy=False):
     plot_df.plot(y=['cum_dead', 'cum_cured'], style='-o', grid=True, ax=ax2, figsize=figsize, sharex=False, logy=logy)
     ax2.set_ylabel("count")
     
+    if title is not None:
+        fig.suptitle(title, fontproperties=_FONT_PROP_, fontsize=fontsize)
+        
     return fig
 
     
-def cross_sectional_bar(df, date_str, col, groupby='province_name', largestN=0, figsize=(13, 10), fontsize=15):
+def cross_sectional_bar(df, date_str, col, groupby='province_name', largestN=0, figsize=(13, 10), fontsize=15, title=None):
     date = pd.to_datetime(date_str)
     df_date = df[df['update_date'] == date]
     group_frm = df_date.groupby(groupby).agg('sum').sort_values(by=col, ascending=True)
     if largestN > 0:
         group_frm = group_frm[-largestN:]  # only plot the first N bars
-    ax = group_frm.plot.barh(y=col, grid=True, figsize=figsize, fontsize=fontsize)
-    ax.set_yticklabels(group_frm.index, fontproperties=_FONT_PROP_) 
+    fig, ax = plt.subplots()
+    group_frm.plot.barh(y=col, grid=True, ax=ax, figsize=figsize)
+    ax.set_yticklabels(group_frm.index, fontproperties=_FONT_PROP_, fontsize=fontsize) 
     ax.legend(loc='lower right')
-    return ax
+    if title is not None:
+        ax.set_title(title, fontproperties=_FONT_PROP_, fontsize=fontsize)  # because there is only one axes, so setting title on ax level, rather than the "suptitle" in figure level looks better
+    return fig
     
     
 def add_en_location(df):
