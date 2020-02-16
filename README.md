@@ -1,8 +1,6 @@
 # 2019-nCov noval coronavirus Data analysis in Python
 ## [简体中文](README.cn.md) | English
 
-* Raw Data from [Ding Xiang Yuan](https://3g.dxy.cn/newh5/view/pneumonia).
-* CSV format data from: https://github.com/BlankerL/DXY-2019-nCoV-Data CSV data file is updated frequently by [2019-nCoV Infection Data Realtime Crawler](https://github.com/BlankerL/DXY-2019-nCoV-Crawler).
 
 ### Prerequisite
 
@@ -25,5 +23,11 @@ data = utils.load_chinese_data()  # obtain CSV real time data
 daily_frm = utils.aggDaily(data)  # aggregate to daily data
 utils.tsplot_conf_dead_cured(daily_frm)  # Time Series plot of the Confirmed, dead, cured count of the whole country
 ```
+
+
+### Acknowledgement
+* Raw Data from [Ding Xiang Yuan](https://3g.dxy.cn/newh5/view/pneumonia).
+* CSV format data from: https://github.com/BlankerL/DXY-2019-nCoV-Data CSV data file is updated frequently by [2019-nCoV Infection Data Realtime Crawler](https://github.com/BlankerL/DXY-2019-nCoV-Crawler).
+
 
 ### Best Wishes 
