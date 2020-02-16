@@ -1,8 +1,6 @@
 # 2019-nCov 新型冠状病毒 Python 数据分析
 ## 简体中文 | [English](README.md)
 
-* 原始数据来源为[丁香园](https://3g.dxy.cn/newh5/view/pneumonia)。 
-* CSV 格式数据文件来源: https://github.com/BlankerL/DXY-2019-nCoV-Data CSV 数据文件由网络爬虫获得，每隔一段时间自动更新一次。
 
 ### 使用前提
 
@@ -25,5 +23,11 @@ data = utils.load_chinese_data()  # 提取 CSV 实时数据
 daily_frm = utils.aggDaily(data)  # 整合成每日数据
 utils.tsplot_conf_dead_cured(daily_frm)  # 画全国确诊、死亡、治愈时间序列图
 ```
+
+
+### 数据来源
+* 原始数据来源为[丁香园](https://3g.dxy.cn/newh5/view/pneumonia)。 
+* CSV 格式数据文件来源: https://github.com/BlankerL/DXY-2019-nCoV-Data CSV 数据文件由网络爬虫获得，每隔一段时间自动更新一次。
+
 
 ### 祝一切安好 
