@@ -65,11 +65,13 @@ def aggDaily(df):
     '''Aggregate the frequent time series data into a daily frame, ie, one entry per (date, province, city)'''
     frm_list = []
     drop_cols = ['province_' + field for field in ['confirmed', 'suspected', 'cured', 'dead']]  # these can be computed later
+    drop_cols += ['provinceEnglishName', 'cityEnglishName', 'province_zipCode']
     for key, frm in df.drop(columns=drop_cols).sort_values(['update_date']).groupby(['province_name', 'city_name', 'update_date']):
         frm_list.append(frm.sort_values(['update_time'])[-1:])    # take the latest row within (city, date)
     out = pd.concat(frm_list).sort_values(['update_date', 'province_name', 'city_name'])
     to_names = [field for field in ['confirmed', 'suspected', 'cured', 'dead']]
     out = out.rename(columns=dict([('city_' + d, 'cum_' + d) for d in to_names]))
+    out = out.rename(columns={'city_zipCode': 'zip_code'})
     out = out.drop(columns=['cum_suspected'])   # the suspected column from csv is not reliable, may keep this when the upstream problem is solved
 
     #out = remove_abnormal_dates(out)
@@ -78,7 +80,7 @@ def aggDaily(df):
     #out = out.set_index(['update_date'])
     
     # rearrange columns
-    new_col_order = ['update_date', 'province_name', 'province_name_en', 'city_name', 'city_name_en', 'cum_confirmed', 'cum_cured', 'cum_dead', 'new_confirmed', 'new_cured', 'new_dead', 'update_time']
+    new_col_order = ['update_date', 'province_name', 'province_name_en', 'city_name', 'city_name_en', 'zip_code', 'cum_confirmed', 'cum_cured', 'cum_dead', 'new_confirmed', 'new_cured', 'new_dead', 'update_time']
     if len(new_col_order) != len(out.columns):
         raise ValueError("Some columns are dropped: ", set(out.columns).difference(new_col_order))
     out = out[new_col_order]
