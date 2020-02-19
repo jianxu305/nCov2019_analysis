@@ -7,7 +7,7 @@ import numpy as np
 _DXY_DATA_PATH_ = 'https://raw.githubusercontent.com/BlankerL/DXY-2019-nCoV-Data/master/csv/DXYArea.csv'
 _CHN_FONT_ = None
 _FONT_PROP_ = None
-_CHN_EN_DICT_ = './locationDict.csv'
+_CHN_EN_DICT_ = '../data/locationDict.csv'
 
 def set_font(font_file):
     if not os.path.exists(font_file):
@@ -210,8 +210,13 @@ def tsplot_conf_dead_cured(df, figsize=(13,10), fontsize=18, logy=False, title=N
     
 def cross_sectional_bar(df, date_str, col, groupby='province_name', largestN=0, figsize=(13, 10), fontsize=15, title=None):
     date = pd.to_datetime(date_str)
-    df_date = df[df['update_date'] == date]
+    if date_str is not None:
+        df_date = df[df['update_date'] == date]
+    else:
+        df_date = df
+        
     group_frm = df_date.groupby(groupby).agg('sum').sort_values(by=col, ascending=True)
+        
     if largestN > 0:
         group_frm = group_frm[-largestN:]  # only plot the first N bars
     fig, ax = plt.subplots()
