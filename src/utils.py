@@ -4,7 +4,9 @@ import matplotlib.font_manager as mfm
 import os
 import numpy as np
 
-_DXY_DATA_PATH_ = 'https://raw.githubusercontent.com/BlankerL/DXY-2019-nCoV-Data/master/csv/DXYArea.csv'
+_DXY_DATA_FILE_ = 'https://raw.githubusercontent.com/BlankerL/DXY-2019-nCoV-Data/master/csv/DXYArea.csv'
+_JHS_DATA_PATH_ = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/'
+_JHS_DATA_START_DATE = '2020-01-22'
 _CHN_FONT_ = None
 _FONT_PROP_ = None
 _CHN_EN_DICT_ = '../data/locationDict.csv'
@@ -26,6 +28,27 @@ def use_chn():
     return _CHN_FONT_ is None
 
 
+def load_jhs_data(last_date_str, verbose=False):
+    dr = pd.date_range(_JHS_DATA_START_DATE, last_date_str)
+    frm_list = []
+    for date in dr:
+        if verbose:
+            print("Reading: " + str(date))
+        frm_list.append(pd.read_csv(_JHS_DATA_PATH_ + date.strftime('%m-%d-%Y') + '.csv'))
+    out = pd.concat(frm_list)
+    out['update_time'] = pd.to_datetime(out['Last Update'])
+    out['update_date'] = out['update_time'].dt.date
+    rename_dict = {'Province/State': 'province/state', 
+                  'Country/Region': 'country/region',
+                  'Confirmed': 'cum_confirmed',
+                   'Death': 'cum_dead',
+                   'Recovered': 'recovered'
+                  }
+    out = out.drop(columns=['Last Update']).rename(columns=rename_dict)
+    return out
+        
+    
+    
 def load_chinese_data():
     ''' This includes some basic cleaning'''
     data = load_chinese_raw()
@@ -36,7 +59,7 @@ def load_chinese_raw():
     '''
     This provides a way to lookinto the 'raw' data
     '''
-    raw = pd.read_csv(_DXY_DATA_PATH_)
+    raw = pd.read_csv(_DXY_DATA_FILE_)
     
     # the original CSV column names are in camel case, change to lower_case convention
     rename_dict = {'updateTime': 'update_time',
