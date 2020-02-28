@@ -28,7 +28,7 @@ def use_chn():
     return _CHN_FONT_ is None
 
 
-def load_jhs_data(last_date_str, verbose=False):
+def load_jhs_raw(last_date_str, verbose=False):
     dr = pd.date_range(_JHS_DATA_START_DATE, last_date_str)
     frm_list = []
     for date in dr:
@@ -44,10 +44,17 @@ def load_jhs_data(last_date_str, verbose=False):
                    'Death': 'cum_dead',
                    'Recovered': 'recovered'
                   }
-    out = out.drop(columns=['Last Update']).rename(columns=rename_dict)
+    out = out.rename(columns=rename_dict)
     return out
         
-    
+
+def jhs_daily(jhs_frm):
+    frm_list = []
+    for key, frm in jhs_frm.groupby(['country/region', 'province/state', 'update_date']):
+        frm_list.append(frm.sort_values(['update_time'])[-1:])    # take the latest row within (city, date)
+    out = pd.concat(frm_list).sort_values(['update_date', 'country/region', 'province/state'])
+    return out
+
     
 def load_chinese_data():
     ''' This includes some basic cleaning'''
