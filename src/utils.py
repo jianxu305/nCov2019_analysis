@@ -35,24 +35,28 @@ def load_jhs_raw(last_date_str, verbose=False):
         if verbose:
             print("Reading: " + str(date))
         frm_list.append(pd.read_csv(_JHS_DATA_PATH_ + date.strftime('%m-%d-%Y') + '.csv'))
-    out = pd.concat(frm_list)
-    out['update_time'] = pd.to_datetime(out['Last Update'])
-    out['update_date'] = out['update_time'].dt.date
+    out = pd.concat(frm_list).drop_duplicates()
     rename_dict = {'Province/State': 'province/state', 
                   'Country/Region': 'country/region',
                   'Confirmed': 'cum_confirmed',
-                   'Death': 'cum_dead',
-                   'Recovered': 'recovered'
+                   'Deaths': 'cum_dead',
+                   'Recovered': 'cum_cured'  # this is a bit inaccurate
                   }
     out = out.rename(columns=rename_dict)
+    out['update_time'] = pd.to_datetime(out['Last Update'])
+    out['update_date'] = out['update_time'].dt.date
+    province = out['province/state']
+    out['province/state'] = out['province/state'].fillna('') # replace NaN province with empty string
+    out = out.reset_index().drop(columns='index')
     return out
         
 
-def jhs_daily(jhs_frm):
+def jhs_daily(jhs_raw):
     frm_list = []
-    for key, frm in jhs_frm.groupby(['country/region', 'province/state', 'update_date']):
+    for key, frm in jhs_raw.groupby(['country/region', 'province/state', 'update_date']):
         frm_list.append(frm.sort_values(['update_time'])[-1:])    # take the latest row within (city, date)
     out = pd.concat(frm_list).sort_values(['update_date', 'country/region', 'province/state'])
+    out = add_daily_new(out, group_keys=['country/region', 'province/state'])
     return out
 
     
@@ -209,9 +213,9 @@ def combine_daily(df):
     return
 
     
-def add_daily_new(df):
+def add_daily_new(df, group_keys=['province_name', 'city_name']):
     cols = ['confirmed', 'dead', 'cured']
-    daily_new = df.groupby(['province_name', 'city_name']).agg(dict([(n, 'diff') for n in ['cum_' + c for c in cols]]))
+    daily_new = df.groupby(group_keys).agg(dict([(n, 'diff') for n in ['cum_' + c for c in cols]]))
     daily_new = daily_new.rename(columns=dict([('cum_' + n, 'new_' + n) for n in cols]))
     df = pd.concat([df, daily_new], axis=1, join='outer')
     return df
