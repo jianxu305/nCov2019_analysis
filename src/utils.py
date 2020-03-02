@@ -41,7 +41,7 @@ def load_jhs_raw(verbose=False):
         except:
             continue
         
-    out = pd.concat(frm_list).drop_duplicates()
+    out = pd.concat(frm_list, sort=False).drop_duplicates()
     rename_dict = {'Province/State': 'province/state', 
                   'Country/Region': 'country/region',
                   'Confirmed': 'cum_confirmed',
