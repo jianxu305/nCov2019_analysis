@@ -3,6 +3,7 @@ import matplotlib.pyplot as plt
 import matplotlib.font_manager as mfm
 import os
 import numpy as np
+import datetime
 
 _DXY_DATA_FILE_ = 'https://raw.githubusercontent.com/BlankerL/DXY-2019-nCoV-Data/master/csv/DXYArea.csv'
 _JHS_DATA_PATH_ = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/'
@@ -28,13 +29,18 @@ def use_chn():
     return _CHN_FONT_ is None
 
 
-def load_jhs_raw(last_date_str, verbose=False):
-    dr = pd.date_range(_JHS_DATA_START_DATE, last_date_str)
+def load_jhs_raw(verbose=False):
+    dr = pd.date_range(_JHS_DATA_START_DATE, datetime.date.today())
     frm_list = []
     for date in dr:
         if verbose:
             print("Reading: " + str(date))
-        frm_list.append(pd.read_csv(_JHS_DATA_PATH_ + date.strftime('%m-%d-%Y') + '.csv'))
+        try:
+            frm = pd.read_csv(_JHS_DATA_PATH_ + date.strftime('%m-%d-%Y') + '.csv')
+            frm_list.append(frm)
+        except:
+            continue
+        
     out = pd.concat(frm_list).drop_duplicates()
     rename_dict = {'Province/State': 'province/state', 
                   'Country/Region': 'country/region',
@@ -47,6 +53,7 @@ def load_jhs_raw(last_date_str, verbose=False):
     out['update_date'] = out['update_time'].dt.date
     province = out['province/state']
     out['province/state'] = out['province/state'].fillna('') # replace NaN province with empty string
+    out = out.sort_values(['update_date', 'country/region', 'province/state'])
     out = out.reset_index().drop(columns='index')
     return out
         
