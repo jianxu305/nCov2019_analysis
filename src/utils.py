@@ -5,6 +5,7 @@ import os
 import numpy as np
 import datetime
 
+
 _DXY_DATA_FILE_ = 'https://raw.githubusercontent.com/BlankerL/DXY-2019-nCoV-Data/master/csv/DXYArea.csv'
 _JHS_DATA_PATH_ = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/'
 _JHS_DATA_START_DATE = '2020-01-22'
@@ -220,12 +221,41 @@ def combine_daily(df):
     # do something when I have time
     return
 
-    
+
+
+def diff0(x):
+    '''similar to numpy.diff, but assumes the first element to be zero, so outputs the same length
+    '''
+    return np.diff(np.hstack([0, x]))
+
+
 def add_daily_new(df, group_keys=['province_name', 'city_name']):
+    '''
+    >>> df = pd.DataFrame({'update_date': [1, 2, 2, 3, 3], 
+    ...     'city_name': ['A', 'A', 'B', 'A', 'B'], 
+    ...     'cum_confirmed': [1, 2, 1, 4, 5],
+    ...     'cum_dead': [0, 0, 0, 1, 1],
+    ...     'cum_cured': [0, 0, 0, 0, 1]})
+    >>> result = add_daily_new(df, group_keys=['city_name'])
+    >>> print(result)
+       update_date city_name  cum_confirmed  cum_dead  cum_cured  new_confirmed  new_dead  new_cured
+    0            1         A              1         0          0            NaN       NaN        NaN
+    1            2         A              2         0          0            1.0       0.0        0.0
+    2            2         B              1         0          0            1.0       0.0        0.0
+    3            3         A              4         1          0            2.0       1.0        0.0
+    4            3         B              5         1          1            4.0       1.0        1.0
+    '''
     cols = ['confirmed', 'dead', 'cured']
-    daily_new = df.groupby(group_keys).agg(dict([(n, 'diff') for n in ['cum_' + c for c in cols]]))
+    # Do NOT use the Pandas 'diff'.  Because it will result in the first element being NA. 
+    # So if a city appears in a later date, its first "new_" will be NA (wrong), instead of the first  element (correct)
+    daily_new = df.groupby(group_keys)[['cum_' + n for n in cols]].transform(diff0)
     daily_new = daily_new.rename(columns=dict([('cum_' + n, 'new_' + n) for n in cols]))
     df = pd.concat([df, daily_new], axis=1, join='outer')
+ 
+    # However, on the first "data date", the "new_" should be NA, because the previous date data is unknown
+    first_data_date = df['update_date'].min()
+    new_cols = ['new_' + n for n in cols]
+    df[new_cols] = df[new_cols].where(df['update_date'] != first_data_date, np.nan)
     return df
     
     
@@ -277,3 +307,8 @@ def add_en_location(df):
     df['province_name_en'] = df['province_name'].replace(translation)
     df['city_name_en'] = df['city_name'].replace(translation)
     return df
+        
+
+if __name__ == "__main__":
+    import doctest
+    doctest.testmod()
