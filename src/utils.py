@@ -54,7 +54,7 @@ def load_jhs_raw(verbose=False):
     out['update_date'] = out['update_time'].dt.date
     province = out['province/state']
     out['province/state'] = out['province/state'].fillna('') # replace NaN province with empty string
-    out['country/region'] = out['country/region'].replace('Others', 'Cruise Ship')
+    out['country/region'] = out['country/region'].replace('Others', 'Diamond Princess')
     out = out.sort_values(['update_date', 'country/region', 'province/state'])
     out = out.reset_index().drop(columns='index')
     return out
