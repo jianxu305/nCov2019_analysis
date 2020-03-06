@@ -321,6 +321,16 @@ def add_en_location(df):
     return df
         
 
+def add_moving_average(df, group_col, win_size, add_log_MA=True):
+    ma = df.reset_index(group_col).groupby(group_col)['new_confirmed', 'new_dead'].rolling(win_size, min_period=1).mean()
+    df['new_confirmed_MA'] = ma['new_confirmed']
+    df['new_dead_MA'] = ma['new_dead']
+    if add_log_MA:
+        df['new_confirmed_logMA'] = np.log10(df['new_confirmed_MA'] + 1) + 1
+        df['new_dead_logMA'] = np.log10(df['new_dead_MA'] + 1) + 1
+    return df
+    
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
