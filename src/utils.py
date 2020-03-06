@@ -327,7 +327,7 @@ def add_moving_average(df, group_col, win_size, add_log_MA=True):
     df['new_dead_MA'] = ma['new_dead']
     if add_log_MA:
         df['new_confirmed_logMA'] = np.log10(df['new_confirmed_MA'] + 1) + 1
-        df['new_dead_logMA'] = np.log10(df['new_dead_MA'] + 1) + 1
+        df['new_dead_logMA'] = np.log10(df['new_dead_MA'] + 1)
     return df
     
 
