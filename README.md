@@ -1,6 +1,8 @@
 # 2019-nCov noval coronavirus Data analysis in Python
 ## [简体中文](README.cn.md) | English
 
+### Introduction on Medium
+https://towardsdatascience.com/understanding-the-coronavirus-epidemic-data-44d2fb356ecb
 
 ### Prerequisite
 
