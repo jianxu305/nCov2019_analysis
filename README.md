@@ -4,8 +4,18 @@
 ### Introduction on Medium
 https://towardsdatascience.com/understanding-the-coronavirus-epidemic-data-44d2fb356ecb
 
-### Prerequisite
 
+### Data Sources
+#### Chinese Data:
+* Raw Data from [Ding Xiang Yuan](https://3g.dxy.cn/newh5/view/pneumonia).
+* CSV format data from: https://github.com/BlankerL/DXY-2019-nCoV-Data CSV data file is updated frequently by [2019-nCoV Infection Data Realtime Crawler](https://github.com/BlankerL/DXY-2019-nCoV-Crawler).
+
+#### International Data:
+* CSV daily data from John Hopkins: https://github.com/CSSEGISandData/COVID-19
+* Real time JSON from https://github.com/ExpDev07/coronavirus-tracker-api , which also uses John Hopkins as underlying data.
+
+
+### Prerequisite
 * Pandas
 * If you need interactive analysis, and you cannot access Google Colab, then you need to install Python Notebook first. 
 
@@ -27,9 +37,6 @@ utils.tsplot_conf_dead_cured(daily_frm)  # Time Series plot of the Confirmed, de
 ```
 
 
-### Acknowledgement
-* Raw Data from [Ding Xiang Yuan](https://3g.dxy.cn/newh5/view/pneumonia).
-* CSV format data from: https://github.com/BlankerL/DXY-2019-nCoV-Data CSV data file is updated frequently by [2019-nCoV Infection Data Realtime Crawler](https://github.com/BlankerL/DXY-2019-nCoV-Crawler).
 
 
 ### Best Wishes 
