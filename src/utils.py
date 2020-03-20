@@ -328,6 +328,17 @@ def add_moving_average(df, group_col, win_size):
     return df
     
 
+def get_Json_obj():
+    import json
+    import urllib.request
+    
+    url = "https://coronavirus-tracker-api.herokuapp.com/all"
+    data = urllib.request.urlopen(url).read().decode()
+    # parse json object
+    obj = json.loads(data)
+    return obj
+
+
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
