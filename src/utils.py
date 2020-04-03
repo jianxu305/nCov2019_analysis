@@ -241,7 +241,7 @@ def diff0(x):
     return np.diff(np.hstack([0, x]))
 
 
-def add_daily_new(df, group_keys=['province_name', 'city_name']):
+def add_daily_new(df, group_keys=['province_name', 'city_name'], diff_cols=['cum_confirmed', 'cum_dead', 'cum_cured'], date_col='update_date'):
     '''
     >>> df = pd.DataFrame({'update_date': [1, 2, 2, 3, 3], 
     ...     'city_name': ['A', 'A', 'B', 'A', 'B'], 
@@ -260,14 +260,21 @@ def add_daily_new(df, group_keys=['province_name', 'city_name']):
     cols = ['confirmed', 'dead', 'cured']
     # Do NOT use the Pandas 'diff'.  Because it will result in the first element being NA. 
     # So if a city appears in a later date, its first "new_" will be NA (wrong), instead of the first  element (correct)
-    daily_new = df.groupby(group_keys)[['cum_' + n for n in cols]].transform(diff0)
-    daily_new = daily_new.rename(columns=dict([('cum_' + n, 'new_' + n) for n in cols]))
+    daily_new = df.groupby(group_keys)[diff_cols].transform(diff0)
+    
+    new_cols = []
+    for col in diff_cols:
+        if 'cum_' in col:
+            new_cols.append(col.replace('cum', 'new'))
+        else:
+            new_cols.append('new_' + col)
+         
+    daily_new = daily_new.rename(columns=dict(zip(diff_cols, new_cols)))
     df = pd.concat([df, daily_new], axis=1, join='outer')
  
     # However, on the first "data date", the "new_" should be NA, because the previous date data is unknown
-    first_data_date = df['update_date'].min()
-    new_cols = ['new_' + n for n in cols]
-    df[new_cols] = df[new_cols].where(df['update_date'] != first_data_date, np.nan)
+    first_data_date = df[date_col].min()
+    df[new_cols] = df[new_cols].where(df[date_col] != first_data_date, np.nan)
     return df
     
     
@@ -339,6 +346,78 @@ def get_Json_obj():
     return obj
 
 
+def stack_frames_by_date(df, date_col, cat_col, val_col='positive_rate'):
+    df = df.sort_values(by=date_col, ascending=True)
+    dates = df[date_col].unique()
+    frm = None
+    for date in dates:
+        x = df[df[date_col] == date][[cat_col, val_col]]
+        subfrm = x.set_index(cat_col).rename(columns=dict([(val_col, str(date))]))
+        if frm is None:
+            frm = subfrm
+        else:
+            frm =pd.concat([frm, subfrm], axis=1)
+    return frm
+            
+
+def parse_IL_death_demographic(date_range):
+    import requests
+    from bs4 import BeautifulSoup
+    IDPH_NEWS_LINK_BASE = 'http://www.dph.illinois.gov/news/2020'
+    START_DEATH_DEMOGRAPHIC_DATE = pd.to_datetime('2020-03-28')
+    
+    headers = requests.utils.default_headers()
+    headers.update({ 'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'})
+
+    months = np.unique([d.month for d in date_range])
+    dates, counties, counts, sexes, ages = [], [], [], [], []
+    for month in months:
+        req = requests.get(IDPH_NEWS_LINK_BASE + str(month).zfill(2), headers)
+        soup = BeautifulSoup(req.content, 'html.parser')
+        for elm in soup.find_all('div', {'class', 'views-field views-field-created'}):
+            date_str = elm.span.get_text()
+            date = pd.to_datetime(date_str)
+            if date not in date_range:
+                continue
+            elif date < START_DEATH_DEMOGRAPHIC_DATE:
+                print(date_str, " too early, no demographic data")
+                continue
+            #print(date_str)
+            news = elm.parent.find('span', {'class': 'news-content'})
+            for ll in news.ul.find_all('li'):
+                #print(death_line)
+                part1, part2 = ll.text.split(':')
+                county = part1.split(' County')[0]
+                #print("", county, ' County: ', part2)
+                entries = part2.split(',')
+                for entry in entries:
+                    sl = entry.split(' ')
+                    sl = [s for s in sl if s != '']
+                    if sl[0].isnumeric():
+                        count = int(sl[0])
+                    else:
+                        count = 1
+                    
+                    if sl[0] == 'infant' and len(sl) == 1:
+                        sex = 'unknown'
+                        age = 0
+                    else:
+                        sex = sl[1]
+                        if len(sl) > 2:  # when sex == 'incomplete', it doesn't have the next entry
+                            age = int(sl[2].split('s')[0])
+                        else:
+                            age = np.nan
+                    #print(count, ', ', sex, ', ', age)
+                    dates.append(date_str)
+                    counties.append(county)
+                    counts.append(count)
+                    sexes.append(sex)
+                    ages.append(age)
+            #print('*********\n')
+    out = pd.DataFrame(data={'Date' : dates, 'County': counties, 'Count': counts, 'Sex': sexes, 'Age_bracket': ages})
+    return out
+    
+    
 if __name__ == "__main__":
     import doctest
     doctest.testmod()
