@@ -413,7 +413,7 @@ def parse_IL_death_demographic(date_range):
                             age = int(sl[2].split('s')[0])
                         else:
                             age = np.nan
-                    dates.append(date_str)
+                    dates.append(date)
                     counties.append(county)
                     counts.append(count)
                     sexes.append(sex)
