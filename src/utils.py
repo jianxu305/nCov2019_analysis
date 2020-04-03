@@ -360,11 +360,177 @@ def stack_frames_by_date(df, date_col, cat_col, val_col='positive_rate'):
     return frm
             
 
+def IL_death_demographic_early():
+    '''On or before 2020-03-27, IDPH release death demographics in a more random format, so manual input here'''
+    dates, counties, counts, sexes, ages, references = [], [], [], [], [], []
+
+    dates.append(pd.to_datetime('2020-03-17'))
+    counties.append('Cook')
+    counts.append(1)
+    sexes.append('female')
+    ages.append(60)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-first-illinois-coronavirus-disease-death')
+
+    dates.append(pd.to_datetime('2020-03-19'))
+    counties.append('Will')
+    counts.append(1)
+    sexes.append('male')
+    ages.append(40)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-deaths-three-more-individuals-illinois-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-19'))
+    counties.append('Cook')
+    counts.append(1)
+    sexes.append('female')
+    ages.append(80)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-deaths-three-more-individuals-illinois-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-19'))
+    counties.append('Sangamon')
+    counts.append(1)
+    sexes.append('female')
+    ages.append(70)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-deaths-three-more-individuals-illinois-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-20'))
+    counties.append('Cook')
+    counts.append(1)
+    sexes.append('female')
+    ages.append(70)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-163-new-cases-coronavirus-disease')
+    
+    dates.append(pd.to_datetime('2020-03-21'))
+    counties.append('Cook')
+    counts.append(1)
+    sexes.append('male')
+    ages.append(70)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-168-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-22'))
+    counties.append('Cook')
+    counts.append(2)   # 1 cook county, 1 Chicago
+    sexes.append('male')
+    ages.append(80)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-296-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-22'))
+    counties.append('McLean')
+    counts.append(1)   # 1 cook county, 1 Chicago
+    sexes.append('female')
+    ages.append(70)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-296-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-23'))
+    counties.append('Cook')
+    counts.append(2)   
+    sexes.append('male')
+    ages.append(80)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-236-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-23'))
+    counties.append('Cook')
+    counts.append(1)   
+    sexes.append('male')
+    ages.append(90)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-236-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-24'))
+    counties.append('Cook')  # chicago
+    counts.append(1)   
+    sexes.append('male')
+    ages.append(50)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-250-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-24'))
+    counties.append('Cook')  
+    counts.append(2)   
+    sexes.append('unknown')  # the news only says "two Cook County residents both in their 60s", did not specify sex
+    ages.append(60)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-250-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-24'))
+    counties.append('DuPage')  
+    counts.append(1)   
+    sexes.append('female')
+    ages.append(90)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-250-new-cases-coronavirus-disease')
+    
+    dates.append(pd.to_datetime('2020-03-25'))
+    counties.append('Kane')  
+    counts.append(1)   
+    sexes.append('male')
+    ages.append(90)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-330-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-25'))
+    counties.append('Cook')  
+    counts.append(1)   
+    sexes.append('male')
+    ages.append(60)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-330-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-25'))
+    counties.append('Will')  
+    counts.append(1)   
+    sexes.append('female')
+    ages.append(50)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-330-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-26'))
+    counties.append('unknown')  
+    counts.append(1)   
+    sexes.append('male')
+    ages.append(50)
+    references.append('http://dph.illinois.gov/news/public-health-officials-announce-673-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-26'))
+    counties.append('unknown')  
+    counts.append(2)   
+    sexes.append('male')
+    ages.append(60)
+    references.append('http://dph.illinois.gov/news/public-health-officials-announce-673-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-26'))
+    counties.append('unknown')  
+    counts.append(2)   
+    sexes.append('female')
+    ages.append(60)
+    references.append('http://dph.illinois.gov/news/public-health-officials-announce-673-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-26'))
+    counties.append('unknown')  
+    counts.append(1)   
+    sexes.append('male')
+    ages.append(70)
+    references.append('http://dph.illinois.gov/news/public-health-officials-announce-673-new-cases-coronavirus-disease')
+
+    dates.append(pd.to_datetime('2020-03-26'))
+    counties.append('unknown')  
+    counts.append(1)   
+    sexes.append('female')
+    ages.append(90)
+    references.append('http://dph.illinois.gov/news/public-health-officials-announce-673-new-cases-coronavirus-disease')
+    
+    dates.append(pd.to_datetime('2020-03-27'))
+    counties.append('unknown')  
+    counts.append(8)   
+    sexes.append('unknown')
+    ages.append(np.nan)
+    references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-488-new-cases-coronavirus-disease')
+    
+    out = pd.DataFrame(data={'Date' : dates, 'County': counties, 'Count': counts, 'Sex': sexes, 'Age_bracket': ages, 'Reference': references})
+    return out
+    
+    
 def parse_IL_death_demographic(date_range):
     import requests
     from bs4 import BeautifulSoup
     IDPH_BASE = 'http://www.dph.illinois.gov'
     IDPH_NEWS_LINK_BASE = IDPH_BASE + '/news/2020'
+    
+    early_demographic = IL_death_demographic_early()
+    early_demographic = early_demographic[early_demographic['Date'].between(date_range[0], date_range[-1], inclusive=True)]
+    
     START_DEATH_DEMOGRAPHIC_DATE = pd.to_datetime('2020-03-28')
     
     headers = requests.utils.default_headers()
@@ -372,7 +538,7 @@ def parse_IL_death_demographic(date_range):
 
     months = np.unique([d.month for d in date_range])
     months = np.sort(months)[::-1]  # descending
-    dates, counties, counts, sexes, ages = [], [], [], [], []
+    dates, counties, counts, sexes, ages, references = [], [], [], [], [], []
     for month in months:
         req = requests.get(IDPH_NEWS_LINK_BASE + str(month).zfill(2), headers)
         soup = BeautifulSoup(req.content, 'html.parser')
@@ -382,7 +548,6 @@ def parse_IL_death_demographic(date_range):
             if date not in date_range:
                 continue
             elif date < START_DEATH_DEMOGRAPHIC_DATE:
-                print(date_str, " too early, no demographic data")
                 continue
             detail_link = IDPH_BASE + elm.parent.find('span', {'class': 'field-content'}).a.get('href')  # use the "read-more >>" link, otherwise the main page may be incomplete
             detail_req = requests.get(detail_link, headers)
@@ -418,7 +583,17 @@ def parse_IL_death_demographic(date_range):
                     counts.append(count)
                     sexes.append(sex)
                     ages.append(age)
-    out = pd.DataFrame(data={'Date' : dates, 'County': counties, 'Count': counts, 'Sex': sexes, 'Age_bracket': ages})
+                    references.append(detail_link)
+                    if len(sl) >= 5 and sl[4] == 'incomplete':  # append incomplete entry, something like "(5 incomplete data)""
+                        dates.append(date)
+                        counties.append(county)
+                        counts.append(int(sl[3].split('(')[1]))
+                        sexes.append('unknown')
+                        ages.append('unknown')
+                        references.append(detail_link)                        
+                        
+    out = pd.DataFrame(data={'Date' : dates, 'County': counties, 'Count': counts, 'Sex': sexes, 'Age_bracket': ages, 'Reference': references})
+    out = pd.concat([out, early_demographic]).sort_values(by='Date')
     return out
     
     
