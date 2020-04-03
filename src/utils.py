@@ -363,13 +363,15 @@ def stack_frames_by_date(df, date_col, cat_col, val_col='positive_rate'):
 def parse_IL_death_demographic(date_range):
     import requests
     from bs4 import BeautifulSoup
-    IDPH_NEWS_LINK_BASE = 'http://www.dph.illinois.gov/news/2020'
+    IDPH_BASE = 'http://www.dph.illinois.gov'
+    IDPH_NEWS_LINK_BASE = IDPH_BASE + '/news/2020'
     START_DEATH_DEMOGRAPHIC_DATE = pd.to_datetime('2020-03-28')
     
     headers = requests.utils.default_headers()
     headers.update({ 'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'})
 
     months = np.unique([d.month for d in date_range])
+    months = np.sort(months)[::-1]  # descending
     dates, counties, counts, sexes, ages = [], [], [], [], []
     for month in months:
         req = requests.get(IDPH_NEWS_LINK_BASE + str(month).zfill(2), headers)
@@ -382,17 +384,19 @@ def parse_IL_death_demographic(date_range):
             elif date < START_DEATH_DEMOGRAPHIC_DATE:
                 print(date_str, " too early, no demographic data")
                 continue
-            #print(date_str)
-            news = elm.parent.find('span', {'class': 'news-content'})
+            detail_link = IDPH_BASE + elm.parent.find('span', {'class': 'field-content'}).a.get('href')  # use the "read-more >>" link, otherwise the main page may be incomplete
+            detail_req = requests.get(detail_link, headers)
+            detail_soup = BeautifulSoup(detail_req.content, 'html.parser')
+            news = detail_soup.find('div', {'class': 'field-item even'})
             for ll in news.ul.find_all('li'):
-                #print(death_line)
                 part1, part2 = ll.text.split(':')
                 county = part1.split(' County')[0]
-                #print("", county, ' County: ', part2)
                 entries = part2.split(',')
                 for entry in entries:
                     sl = entry.split(' ')
                     sl = [s for s in sl if s != '']
+                    if len(sl) == 2:
+                        sl = ['1'] + sl
                     if sl[0].isnumeric():
                         count = int(sl[0])
                     else:
@@ -403,17 +407,17 @@ def parse_IL_death_demographic(date_range):
                         age = 0
                     else:
                         sex = sl[1]
+                        if sex[-1] == 's':  # 'males' or 'females', get rid off the plural
+                            sex = sex[:-1]
                         if len(sl) > 2:  # when sex == 'incomplete', it doesn't have the next entry
                             age = int(sl[2].split('s')[0])
                         else:
                             age = np.nan
-                    #print(count, ', ', sex, ', ', age)
                     dates.append(date_str)
                     counties.append(county)
                     counts.append(count)
                     sexes.append(sex)
                     ages.append(age)
-            #print('*********\n')
     out = pd.DataFrame(data={'Date' : dates, 'County': counties, 'Count': counts, 'Sex': sexes, 'Age_bracket': ages})
     return out
     
