@@ -515,7 +515,7 @@ def IL_death_demographic_early():
     counties.append('unknown')  
     counts.append(8)   
     sexes.append('unknown')
-    ages.append(np.nan)
+    ages.append('unknown')
     references.append('http://www.dph.illinois.gov/news/public-health-officials-announce-488-new-cases-coronavirus-disease')
     
     out = pd.DataFrame(data={'Date' : dates, 'County': counties, 'Count': counts, 'Sex': sexes, 'Age_bracket': ages, 'Reference': references})
@@ -575,7 +575,7 @@ def parse_IL_death_demographic(date_range):
                         if sex[-1] == 's':  # 'males' or 'females', get rid off the plural
                             sex = sex[:-1]
                         if len(sl) > 2:  # when sex == 'incomplete', it doesn't have the next entry
-                            age = int(sl[2].split('s')[0])
+                            age = int(sl[2].split('.')[0][:-1])   # sometimes a '.' at the end of the sentence is there
                         else:
                             age = np.nan
                     dates.append(date)
@@ -595,6 +595,13 @@ def parse_IL_death_demographic(date_range):
     out = pd.DataFrame(data={'Date' : dates, 'County': counties, 'Count': counts, 'Sex': sexes, 'Age_bracket': ages, 'Reference': references})
     out = pd.concat([out, early_demographic]).sort_values(by='Date')
     return out
+    
+    
+def parse_IL_county_current_data():
+    link = 'https://coronavirus.illinois.gov/s/county-map'
+    headers = requests.utils.default_headers()
+    headers.update({ 'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'})
+
     
     
 if __name__ == "__main__":
