@@ -575,7 +575,12 @@ def parse_IL_death_demographic(date_range):
                         if sex[-1] == 's':  # 'males' or 'females', get rid off the plural
                             sex = sex[:-1]
                         if len(sl) > 2:  # when sex == 'incomplete', it doesn't have the next entry
-                            age = int(sl[2].split('.')[0][:-1])   # sometimes a '.' at the end of the sentence is there
+                            if sl[2][-1].isnumeric():
+                                age = int(sl[2])
+                            elif sl[2][-2].isnumeric():
+                                age = int(sl[2][:-1])
+                            else:
+                                age = int(sl[2][:-2])   # sometimes ends as 's.', or '\'s'
                         else:
                             age = np.nan
                     dates.append(date)
