@@ -9,6 +9,7 @@ import datetime
 _DXY_DATA_FILE_ = 'https://raw.githubusercontent.com/BlankerL/DXY-2019-nCoV-Data/master/csv/DXYArea.csv'
 _JHS_DATA_PATH_ = 'https://raw.githubusercontent.com/CSSEGISandData/COVID-19/master/csse_covid_19_data/csse_covid_19_daily_reports/'
 _JHS_DATA_START_DATE = '2020-01-22'
+_JHS_DATA_START_DATE_NEW = '2020-03-22'  # start to publish new format, more details in location, etc
 _CHN_FONT_ = None
 _FONT_PROP_ = None
 _CHN_EN_DICT_ = '../data/locationDict.csv'
@@ -29,44 +30,64 @@ set_font('./STFANGSO.TTF')   # for displaying Chinese characters in plots
 def use_chn():
     return _CHN_FONT_ is None
 
-
+    
 def load_jhs_raw(verbose=False):
     dr = pd.date_range(_JHS_DATA_START_DATE, datetime.date.today())
-    frm_list = []
+    new_date = pd.to_datetime(_JHS_DATA_START_DATE_NEW)
+    frm_list_old, frm_list_new = [], []
     for date in dr:
         if verbose:
             print("Reading: " + str(date))
         try:
             frm = pd.read_csv(_JHS_DATA_PATH_ + date.strftime('%m-%d-%Y') + '.csv')
-            frm_list.append(frm)
+            if date < new_date:
+                frm_list_old.append(frm)
+            else:
+                frm_list_new.append(frm)
         except:
             continue
-        
-    out = pd.concat(frm_list, sort=False).drop_duplicates()
-    rename_dict = {'Province/State': 'province/state', 
-                  'Country/Region': 'country/region',
-                  'Confirmed': 'cum_confirmed',
-                   'Deaths': 'cum_dead',
-                   'Recovered': 'cum_cured'  # this is a bit inaccurate
-                  }
-    out = out.rename(columns=rename_dict)
-    out['update_time'] = pd.to_datetime(out['Last Update'])
-    out['update_date'] = out['update_time'].dt.date
-    province = out['province/state']
-    out['province/state'] = out['province/state'].fillna('') # replace NaN province with empty string
-    out['country/region'] = out['country/region'].replace('Others', 'Diamond Princess')
-    out = out.sort_values(['update_date', 'country/region', 'province/state'])
-    out = out.reset_index().drop(columns='index')
+    
+    frm_old = pd.concat(frm_list_old, sort=False).drop_duplicates()
+    frm_new = pd.concat(frm_list_new, sort=False).drop_duplicates()
+    
+    # the new frame has more info and different names, convert the old to the new
+    frm_old['FIPS'] = np.nan
+    frm_old['Admin2'] = ''
+    frm_old['Active'] = frm_old['Confirmed'] - frm_old['Deaths'] - frm_old['Recovered']  # a little processing here
+    frm_old['Combined_Key'] = frm_old['Province/State'] + ',' + frm_old['Country/Region']
+    frm_old = frm_old.rename(columns={"Province/State": "Province_State",
+                                     "Country/Region": "Country_Region",
+                                     "Last Update": "Last_Update",
+                                     "Latitude": "Lat",
+                                     "Longitude": "Long_"})
+    out = pd.concat([frm_old, frm_new])
     return out
+
+#    out = pd.concat(frm_list, sort=False).drop_duplicates()
+#    rename_dict = {'Province/State': 'province/state', 
+#                  'Country/Region': 'country/region',
+#                  'Confirmed': 'cum_confirmed',
+#                   'Deaths': 'cum_dead',
+#                   'Recovered': 'cum_cured'  # this is a bit inaccurate
+#                  }
+#    out = out.rename(columns=rename_dict)
+#    out['update_time'] = pd.to_datetime(out['Last Update'])
+#    out['update_date'] = out['update_time'].dt.date
+#    province = out['province/state']
+#    out['province/state'] = out['province/state'].fillna('') # replace NaN province with empty string
+#    out['country/region'] = out['country/region'].replace('Others', 'Diamond Princess')
+#    out = out.sort_values(['update_date', 'country/region', 'province/state'])
+#    out = out.reset_index().drop(columns='index')
+#    return out
         
 
-def jhs_daily(jhs_raw):
-    frm_list = []
-    for key, frm in jhs_raw.groupby(['country/region', 'province/state', 'update_date']):
-        frm_list.append(frm.sort_values(['update_time'])[-1:])    # take the latest row within (city, date)
-    out = pd.concat(frm_list).sort_values(['update_date', 'country/region', 'province/state'])
-    out = add_daily_new(out, group_keys=['country/region', 'province/state'])
-    return out
+#def jhs_daily(jhs_raw):
+#    frm_list = []
+#    for key, frm in jhs_raw.groupby(['country/region', 'province/state', 'update_date']):
+#        frm_list.append(frm.sort_values(['update_time'])[-1:])    # take the latest row within (city, date)
+#    out = pd.concat(frm_list).sort_values(['update_date', 'country/region', 'province/state'])
+#    out = add_daily_new(out, group_keys=['country/region', 'province/state'])
+#    return out
 
     
 def load_chinese_data():
