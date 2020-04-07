@@ -40,15 +40,18 @@ def load_jhs_raw(verbose=False):
             print("Reading: " + str(date))
         try:
             frm = pd.read_csv(_JHS_DATA_PATH_ + date.strftime('%m-%d-%Y') + '.csv')
-            if date < new_date:
-                frm_list_old.append(frm)
-            else:
-                frm_list_new.append(frm)
         except:
-            continue
+            continue 
+
+        if date == pd.to_datetime('2020-03-13'):  # somehow this date's CSV contains many data on 3/11
+                frm = frm[pd.to_datetime(frm['Last Update']).dt.date == date]
+        if date < new_date:
+            frm_list_old.append(frm)
+        else:
+            frm_list_new.append(frm)
     
-    frm_old = pd.concat(frm_list_old, sort=False).drop_duplicates()
-    frm_new = pd.concat(frm_list_new, sort=False).drop_duplicates()
+    frm_old = pd.concat(frm_list_old)
+    frm_new = pd.concat(frm_list_new)
     
     # the new frame has more info and different names, convert the old to the new
     frm_old['FIPS'] = np.nan
@@ -60,7 +63,9 @@ def load_jhs_raw(verbose=False):
                                      "Last Update": "Last_Update",
                                      "Latitude": "Lat",
                                      "Longitude": "Long_"})
-    out = pd.concat([frm_old, frm_new])
+    out = pd.concat([frm_old, frm_new])        
+    out['Last_Update'] = pd.to_datetime(out['Last_Update'])
+    out['Update_Date'] = out['Last_Update'].dt.date   
     return out
 
 #    out = pd.concat(frm_list, sort=False).drop_duplicates()
@@ -82,12 +87,13 @@ def load_jhs_raw(verbose=False):
         
 
 #def jhs_daily(jhs_raw):
-#    frm_list = []
-#    for key, frm in jhs_raw.groupby(['country/region', 'province/state', 'update_date']):
-#        frm_list.append(frm.sort_values(['update_time'])[-1:])    # take the latest row within (city, date)
-#    out = pd.concat(frm_list).sort_values(['update_date', 'country/region', 'province/state'])
-#    out = add_daily_new(out, group_keys=['country/region', 'province/state'])
-#    return out
+#frm_list = []
+#location_cols = ['Country_Region', 'Province_State', 'Admin2']
+#for key, frm in jhs_raw.groupby(['Update_Date'] + location_cols):
+#frm_list.append(frm.sort_values(['Last_Update'])[-1:])    # take the latest row within (city, date)
+#out = pd.concat(frm_list).sort_values(['Update_Date'] + location_cols)
+#out = add_daily_new(out, group_keys=location_col)
+#return out
 
     
 def load_chinese_data():
