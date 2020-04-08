@@ -588,7 +588,10 @@ def parse_IL_death_demographic(date_range):
                     sl = entry.split(' ')
                     sl = [s for s in sl if s != '']
                     if len(sl) == 2:
-                        sl = ['1'] + sl
+                        if sl[0].isnumeric():
+                            sl.append('unknown')
+                        else:
+                            sl = ['1'] + sl
                     if sl[0].isnumeric():
                         count = int(sl[0])
                     else:
@@ -602,7 +605,9 @@ def parse_IL_death_demographic(date_range):
                         if sex[-1] == 's':  # 'males' or 'females', get rid off the plural
                             sex = sex[:-1]
                         if len(sl) > 2:  # when sex == 'incomplete', it doesn't have the next entry
-                            if sl[2][-1].isnumeric():
+                            if sl[2] == 'unknown':
+                                age = 'unknown'                            
+                            elif sl[2][-1].isnumeric():
                                 age = int(sl[2])
                             elif sl[2][-2].isnumeric():
                                 age = int(sl[2][:-1])
