@@ -585,6 +585,8 @@ def parse_IL_death_demographic(date_range):
                 county = part1.split(' County')[0]
                 entries = part2.split(',')
                 for entry in entries:
+                    if entry == '':
+                        continue
                     sl = entry.split(' ')
                     sl = [s for s in sl if s != '']
                     if len(sl) == 2:
