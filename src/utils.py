@@ -548,8 +548,47 @@ def IL_death_demographic_early():
     out = pd.DataFrame(data={'Date' : dates, 'County': counties, 'Count': counts, 'Sex': sexes, 'Age_bracket': ages, 'Reference': references})
     return out
     
-    
-def parse_IL_death_demographic(date_range):
+
+def extract(entry):
+    sl = entry.split(' ')
+    sl = [s for s in sl if s != '']
+    if len(sl) == 2:
+        if sl[0].isnumeric():
+            sl.append('unknown')
+        else:
+            sl = ['1'] + sl
+    if sl[0].isnumeric():
+        count = int(sl[0])
+    else:
+        count = 1
+
+    if sl[0] == 'infant' and len(sl) == 1:
+        sex = 'unknown'
+        age = 0
+    else:
+        sex = sl[1]
+        if sex[-1] == 's':  # 'males' or 'females', get rid off the plural
+            sex = sex[:-1]
+        if sex == 'incomplete':
+            sex = 'unknown'
+        
+        if sl[2] == 'teens':
+            age = 10
+        elif sl[2][-1].isnumeric():
+            age = int(sl[2])
+        elif sl[2][-2].isnumeric():
+            age = int(sl[2][:-1])
+        elif sl[2][:-2].isnumeric():
+            age = int(sl[2][:-2])   # sometimes ends as 's.', or '\'s'
+        else:
+            age = 'unknown'  
+        
+    return count, sex, age
+
+
+def parse_IL_death_demographic(date_range, max_page=5):
+    '''max_page is the maximum number of pages from https://www.dph.illinois.gov/news/<yyyymm> to parse
+    '''
     import requests
     from bs4 import BeautifulSoup
     IDPH_BASE = 'http://www.dph.illinois.gov'
@@ -560,87 +599,78 @@ def parse_IL_death_demographic(date_range):
     
     START_DEATH_DEMOGRAPHIC_DATE = pd.to_datetime('2020-03-28')
     
-    headers = requests.utils.default_headers()
-    headers.update({ 'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'})
+    #headers = requests.utils.default_headers()
+    #headers.update({ 'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'})
 
-    months = np.unique([d.month for d in date_range])
-    months = np.sort(months)[::-1]  # descending
     dates, counties, counts, sexes, ages, references = [], [], [], [], [], []
-    for month in months:
-        req = requests.get(IDPH_NEWS_LINK_BASE + str(month).zfill(2), headers)
-        soup = BeautifulSoup(req.content, 'html.parser')
-        for elm in soup.find_all('div', {'class', 'views-field views-field-created'}):
+    dl = [d for d in date_range]
+    dl.reverse()   # latest date first
+    dl = [d for d in dl if d >= START_DEATH_DEMOGRAPHIC_DATE]
+    page_dates = []
+    page_month = dl[0].month
+    page = 0
+    for date in dl:
+        skip_date = False
+        if date.month != page_month:  # reset the request
+            page_month = date.month  
+            page = 0
+            page_dates = []
+        while page < max_page and date not in page_dates:
+            if len(page_dates) > 0:  # not the first en
+                if date < page_dates[-1]:
+                    page += 1
+                else:
+                    skip_date = True
+                    break                
+            print(date, " Requesting Page: " + str(page))
+            req = requests.get(IDPH_NEWS_LINK_BASE + str(page_month).zfill(2) + '?page=' + str(page))
+            soup = BeautifulSoup(req.content, 'html.parser')
+            elm_list = soup.find_all('div', {'class': 'views-field views-field-created'})
+            page_dates = [pd.to_datetime(e.span.get_text()) for e in elm_list]
+                
+        if skip_date:
+            continue
+        for elm in elm_list:
             date_str = elm.span.get_text()
-            date = pd.to_datetime(date_str)
-            if date not in date_range:
+            elm_date = pd.to_datetime(date_str)
+            if elm_date != date:
                 continue
-            elif date < START_DEATH_DEMOGRAPHIC_DATE:
-                continue
+            elif elm_date < START_DEATH_DEMOGRAPHIC_DATE:
+                break
+                
             detail_link = IDPH_BASE + elm.parent.find('span', {'class': 'field-content'}).a.get('href')  # use the "read-more >>" link, otherwise the main page may be incomplete
-            detail_req = requests.get(detail_link, headers)
+            detail_req = requests.get(detail_link)
             detail_soup = BeautifulSoup(detail_req.content, 'html.parser')
             news = detail_soup.find('div', {'class': 'field-item even'})
-            for ll in news.ul.find_all('li'):
-                part1, part2 = ll.text.split(':')
-                county = part1.split(' County')[0]
-                entries = part2.split(',')
-                for entry in entries:
-                    if entry == '':
-                        continue
-                    sl = entry.split(' ')
-                    sl = [s for s in sl if s != '']
-                    if len(sl) == 2:
-                        if sl[0].isnumeric():
-                            sl.append('unknown')
-                        else:
-                            sl = ['1'] + sl
-                    if sl[0].isnumeric():
-                        count = int(sl[0])
-                    else:
-                        count = 1
-                    
-                    if sl[0] == 'infant' and len(sl) == 1:
-                        sex = 'unknown'
-                        age = 0
-                    else:
-                        sex = sl[1]
-                        if sex[-1] == 's':  # 'males' or 'females', get rid off the plural
-                            sex = sex[:-1]
-                        if len(sl) > 2:  # when sex == 'incomplete', it doesn't have the next entry
-                            if sl[2] == 'unknown':
-                                age = 'unknown'                            
-                            elif sl[2][-1].isnumeric():
-                                age = int(sl[2])
-                            elif sl[2][-2].isnumeric():
-                                age = int(sl[2][:-1])
-                            else:
-                                age = int(sl[2][:-2])   # sometimes ends as 's.', or '\'s'
-                        else:
-                            age = np.nan
+            for li in news.ul.find_all('li'):
+                if ':' in li.text:
+                    separator = ':'
+                elif ';' in li.text:
+                    separator = ';'
+                else:
+                    raise 'Unknown separator'
+                
+                head, text = li.text.split(separator)
+                county = head.split(' ')[0]
+                entries = text.split(',')
+                entries_without_bracket = [e for e in entries if '(' not in e and e != '']
+                for e in [e for e in entries if '(' in e]:
+                    entries_without_bracket.extend(e.split('('))
+                for entry in entries_without_bracket:
+                    count, sex, age = extract(entry)
                     dates.append(date)
                     counties.append(county)
                     counts.append(count)
                     sexes.append(sex)
                     ages.append(age)
                     references.append(detail_link)
-                    if len(sl) >= 5 and sl[4] == 'incomplete':  # append incomplete entry, something like "(5 incomplete data)""
-                        dates.append(date)
-                        counties.append(county)
-                        counts.append(int(sl[3].split('(')[1]))
-                        sexes.append('unknown')
-                        ages.append('unknown')
-                        references.append(detail_link)                        
-                        
+        
+        if date < START_DEATH_DEMOGRAPHIC_DATE or date < dl[-1] or page > max_page:
+            break
+                     
     out = pd.DataFrame(data={'Date' : dates, 'County': counties, 'Count': counts, 'Sex': sexes, 'Age_bracket': ages, 'Reference': references})
     out = pd.concat([out, early_demographic]).sort_values(by='Date')
     return out
-    
-    
-def parse_IL_county_current_data():
-    link = 'https://coronavirus.illinois.gov/s/county-map'
-    headers = requests.utils.default_headers()
-    headers.update({ 'User-Agent': 'Mozilla/5.0 (X11; Ubuntu; Linux x86_64; rv:52.0) Gecko/20100101 Firefox/52.0'})
-
     
     
 if __name__ == "__main__":
