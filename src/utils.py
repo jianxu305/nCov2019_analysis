@@ -569,7 +569,7 @@ def extract(entry):
         sex = sl[1]
         if sex[-1] == 's':  # 'males' or 'females', get rid off the plural
             sex = sex[:-1]
-        if sex == 'incomplete':
+        if sex == 'incomplete' or sex == 'unknow':
             sex = 'unknown'
         
         if sl[2] == 'teens':
@@ -644,14 +644,16 @@ def parse_IL_death_demographic(date_range, max_page=5):
             news = detail_soup.find('div', {'class': 'field-item even'})
             for li in news.ul.find_all('li'):
                 if ':' in li.text:
-                    separator = ':'
+                    head, text = li.text.split(':')
+                    county = head.split(' ')[0]
                 elif ';' in li.text:
-                    separator = ';'
+                    head, text = li.text.split(';')
+                    county = head.split(' ')[0]
+                elif 'County' in li.text:
+                    County, text = li.text.split('County')
                 else:
                     raise 'Unknown separator'
                 
-                head, text = li.text.split(separator)
-                county = head.split(' ')[0]
                 entries = text.split(',')
                 entries_without_bracket = [e for e in entries if '(' not in e and e != '']
                 for e in [e for e in entries if '(' in e]:
