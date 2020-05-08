@@ -180,7 +180,9 @@ def rename_cities(snapshots):
     This results in the aggregation on province level gets too high.
     For now, entries will be ignored if city_name == xxx(xxx), and xxx already in the city_name set
     '''
-    dup_frm = snapshots[snapshots['city_name'].str.contains('（')]
+    dup_frm = snapshots[np.logical_and(
+        np.logical_not(snapshots['city_name'].isnull()), 
+        snapshots['city_name'].str.contains('（'))]
     rename_dict = {}
     if len(dup_frm) >= 0:
         rename_dict = dict([(name, name.split('（')[0]) for name in dup_frm['city_name']])
