@@ -150,7 +150,9 @@ def aggDaily(df):
     #out = out.set_index(['update_date'])
     
     # rearrange columns
-    new_col_order = ['update_date', 'province_name', 'province_name_en', 'city_name', 'city_name_en', 'zip_code', 'cum_confirmed', 'cum_cured', 'cum_dead', 'new_confirmed', 'new_cured', 'new_dead', 'update_time']
+    new_col_order = ['update_date', 'continentName', 'countryName', 'continentEnglishName', 'countryEnglishName', 
+                     'province_name', 'province_name_en', 'city_name', 'city_name_en', 'zip_code', 'cum_confirmed', 
+                     'cum_cured', 'cum_dead', 'new_confirmed', 'new_cured', 'new_dead', 'update_time']
     if len(new_col_order) != len(out.columns):
         raise ValueError("Some columns are dropped: ", set(out.columns).difference(new_col_order))
     out = out[new_col_order]
